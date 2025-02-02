@@ -3,6 +3,7 @@ package remote
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -54,12 +55,13 @@ func RegisterDevice() (string, error) {
 func ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error) {
 	input := ActivateDeviceInput{
 		Modules:          []ProductModule{ProductModulePrivacy},
-		ActivationMethod: ActivationMethodOneTimeToken,
 		ActivationMode:   ActivationModePassive,
 	}
 	if mbcode {
+		input.ActivationMethod = ActivationMethodOneTimeToken
 		input.OneTimeToken = key
 	} else {
+		input.ActivationMethod = ActivationMethodLicenseKey
 		input.LicenseKey = key
 	}
 
@@ -298,6 +300,15 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 	if err != nil {
 		return err
 	}
+
+  var errorResponse ErrorResponse
+  err = json.Unmarshal(data, &errorResponse)
+  if err != nil {
+    return err
+  }
+  if len(errorResponse.Errors) > 0 {
+    return errors.New(errorResponse.Errors[0].Message)
+  }
 
 	err = json.Unmarshal(data, &responseBody)
 	if err != nil {

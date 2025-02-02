@@ -1,5 +1,13 @@
 package remote
 
+type ErrorResponse struct {
+  Errors []Error `json:"errors"`
+}
+
+type Error struct {
+  Message string `json:"message"`
+}
+
 type ProductModule string
 
 const (
