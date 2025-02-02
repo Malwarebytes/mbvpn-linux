@@ -56,7 +56,6 @@ func ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceM
 		Modules:          []ProductModule{ProductModulePrivacy},
 		ActivationMethod: ActivationMethodOneTimeToken,
 		ActivationMode:   ActivationModePassive,
-		OneTimeToken:     key,
 	}
 	if mbcode {
 		input.OneTimeToken = key
@@ -266,7 +265,10 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 		return err
 	}
 
-	applyDefaultHeaders(installationToken, request)
+	err = applyDefaultHeaders(installationToken, request)
+  if err != nil {
+    return err
+  }
 
 	if config.Debug {
 		reqDump, err := httputil.DumpRequestOut(request, true)
@@ -305,15 +307,15 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 	return nil
 }
 
-func applyDefaultHeaders(installationToken string, request *http.Request) (*http.Request, error) {
+func applyDefaultHeaders(installationToken string, request *http.Request) error {
 	request.Header.Set("Content-Type", "application/json")
 
 	machineId, err := config.GetMachineId()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	request.Header.Set("X-Device-Bearer", fmt.Sprintf("%s|%s", installationToken, machineId))
 
-	return request, nil
+	return nil
 }

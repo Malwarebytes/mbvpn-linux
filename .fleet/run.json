@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "type": "command",
+      "name": "Build Linux ARM64",
+      "program": "/usr/local/go/bin/go",
+      "workingDir": "$PROJECT_DIR$",
+      "args": ["build"],
+      "environment": {
+        "GOOS":"linux",
+        "GOARCH":"arm64",
+      }
+    }
+  ]
+}

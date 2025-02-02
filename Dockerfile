@@ -1,7 +1,7 @@
 FROM golang:1.23-alpine
-WORKDIR /app
+WORKDIR /
 COPY go.mod ./
 RUN go mod download
-COPY *.go ./
-RUN go build -o /mbvpn
-CMD [ "/mbvpn" ]
+COPY ../mbvpn /mbvpn
+# RUN go build -o /mbvpn
+CMD [ "ls" ]
