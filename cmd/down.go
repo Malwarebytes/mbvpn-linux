@@ -1,12 +1,13 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
-	"fmt"
 
+	"github.com/Malwarebytes/mbvpn/config"
+	"github.com/Malwarebytes/mbvpn/remote"
+	"github.com/Malwarebytes/mbvpn/vpn"
 	"github.com/spf13/cobra"
 )
 
@@ -21,20 +22,14 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("down called")
+		holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
+		cp := config.NewYamlConfigProvider()
+		vpn := vpn.NewDefaultVpn(cp, holocron)
+
+		vpn.Down(args[0])
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(downCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// downCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// downCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

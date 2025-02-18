@@ -3,8 +3,10 @@ package vpn
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/Malwarebytes/mbvpn/config"
@@ -15,6 +17,7 @@ import (
 type Vpn interface {
 	Servers()
 	Up(cfg string)
+  Down(cfg string)
 }
 
 type DefaultVpn struct {
@@ -22,7 +25,7 @@ type DefaultVpn struct {
 	holocron    remote.Holocron
 }
 
-func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron) *DefaultVpn {
+func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron) Vpn {
 	return &DefaultVpn{
 		cfgProvider: cfgProvider,
 		holocron:    holocron,
@@ -41,6 +44,8 @@ func (vpn *DefaultVpn) Servers() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	fmt.Println("Fetching servers...")
 
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
@@ -71,37 +76,46 @@ func (vpn *DefaultVpn) Servers() {
 		}
 	}
 
+	fmt.Println()
 	fmt.Println(`Call "mbvpn up <server>" to connect and "mbvpn down <server>" to disconnect.`)
-
-	// networkDetails, err := remote.GetVpnNetworkDetails(installationToken)
-	// if err != nil {
-	//   log.Panic(err)
-	// }
-	//
-	// fmt.Printf("Current country: %s", networkDetails.Geo.Country)
-	//
-	// //Connect
-	//
-	// fmt.Printf("Current country: %s", networkDetails.Geo.Country)
-	//
-	// //Disconnect
-	//
-	// fmt.Printf("Current country: %s", networkDetails.Geo.Country)
 }
 
 func (vpn *DefaultVpn) Up(cfg string) {
-	_, err := os.Stat(cfg)
-	if errors.Is(err, os.ErrNotExist) {
-		fmt.Fprintf(os.Stderr, "Config %s doesn't exist. Use \"servers\" command to see available configurations.\n", cfg)
-		os.Exit(2)
-	}
+	// cfgPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfg))
 
 	fmt.Printf("Connection to %s...\n", cfg)
 
-	// TODO
-	// _ := config.Debug
+	cmd := exec.Command("sudo", "wg-quick", "up", cfg)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
 
-	fmt.Println("Connected!")
+	if err := cmd.Run(); err != nil {
+		log.Panic(err)
+	} else {
+		fmt.Println("Connected.")
+	}
+}
+
+func (vpn *DefaultVpn) Down(cfg string) {
+	// cfgPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfg))
+
+	if cfg == "" {
+    fmt.Println("Disconnecting...")
+	} else {
+		fmt.Printf("Disconnecting from %s...\n", cfg)
+	}
+
+	cmd := exec.Command("sudo", "wg-quick", "down", cfg)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		log.Panic(err)
+	} else {
+		fmt.Println("Disconnected.")
+	}
 }
 
 func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
@@ -141,8 +155,7 @@ Address = %s, %s
 [Peer]
 PublicKey = %s
 Endpoint = %s:51820
-AllowedIPs = 0.0.0.0/0, ::/0
-`,
+AllowedIPs = 0.0.0.0/0, ::/0`,
 		privateKey,
 		ipv4,
 		ipv6,
@@ -150,5 +163,24 @@ AllowedIPs = 0.0.0.0/0, ::/0
 		server.IPv4AddrIn,
 	)
 
-	return os.WriteFile(configPath, []byte(content), 0o600)
+	cmd := exec.Command("sudo", "tee", configPath)
+	cmd.Stderr = os.Stderr
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		defer stdin.Close()
+		if _, err := io.WriteString(stdin, content); err != nil {
+			log.Fatal("Error writing data to stdin:", err)
+		}
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }

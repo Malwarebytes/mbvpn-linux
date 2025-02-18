@@ -11,7 +11,7 @@ import (
 )
 
 func Debug() bool {
-	return testing.Verbose()
+	return testing.Testing() && testing.Verbose()
 }
 
 type Config struct {
@@ -26,7 +26,7 @@ type ConfigProvider interface {
 
 type YamlConfigProvider struct{}
 
-func NewYamlConfigProvider() *YamlConfigProvider {
+func NewYamlConfigProvider() ConfigProvider {
 	return &YamlConfigProvider{}
 }
 
@@ -36,7 +36,7 @@ type MachineIdProvider interface {
 
 type EtcFileMachineIdProvider struct{}
 
-func NewEtcFileMachineIdProvider() *EtcFileMachineIdProvider {
+func NewEtcFileMachineIdProvider() MachineIdProvider {
   return &EtcFileMachineIdProvider{}
 }
 

@@ -38,7 +38,7 @@ type DefaultHolocron struct {
 	mIdProvider config.MachineIdProvider
 }
 
-func NewDefaultHolocron(mIdProvider config.MachineIdProvider) *DefaultHolocron {
+func NewDefaultHolocron(mIdProvider config.MachineIdProvider) Holocron {
 	return &DefaultHolocron{
 		mIdProvider: mIdProvider,
 	}

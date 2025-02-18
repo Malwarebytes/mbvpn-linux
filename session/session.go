@@ -19,7 +19,7 @@ type DefaultSessionManager struct {
   holocron remote.Holocron
 }
 
-func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote.Holocron) *DefaultSessionManager {
+func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote.Holocron) SessionManager {
   return &DefaultSessionManager{
     cfgProvider: cfgProvider,
     holocron: holocron,
