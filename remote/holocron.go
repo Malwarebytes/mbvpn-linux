@@ -22,7 +22,29 @@ const (
 
 var client = &http.Client{Timeout: time.Second * 10}
 
-func RegisterDevice() (string, error) {
+type Holocron interface {
+	RegisterDevice() (string, error)
+	ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error)
+	DeactivateDevice(installationToken string) (*DeviceModule, error)
+	VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses, error)
+	GetVpnNetworkDetails() (*VpnNetworkDetails, error)
+	GetVpnLocations() (*VpnLocations, error)
+	GetVpnClientDefaults() (*VpnClientDefaults, error)
+
+	doRequest(installationToken string, body *map[string]interface{}, responseBody any) error
+}
+
+type DefaultHolocron struct {
+	mIdProvider config.MachineIdProvider
+}
+
+func NewDefaultHolocron(mIdProvider config.MachineIdProvider) *DefaultHolocron {
+	return &DefaultHolocron{
+		mIdProvider: mIdProvider,
+	}
+}
+
+func (api *DefaultHolocron) RegisterDevice() (string, error) {
 	input := RegisterDeviceInput{
 		ProductCode:    productCode,
 		ProductVersion: productVersion,
@@ -44,7 +66,7 @@ func RegisterDevice() (string, error) {
 	}
 
 	var response RegisterDeviceResponse
-	err := doRequest("", &requestBody, &response)
+	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return "", err
 	}
@@ -52,10 +74,10 @@ func RegisterDevice() (string, error) {
 	return response.Data.RegisterDevice.Device.InstallationToken, nil
 }
 
-func ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error) {
+func (api *DefaultHolocron) ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error) {
 	input := ActivateDeviceInput{
-		Modules:          []ProductModule{ProductModulePrivacy},
-		ActivationMode:   ActivationModePassive,
+		Modules:        []ProductModule{ProductModulePrivacy},
+		ActivationMode: ActivationModePassive,
 	}
 	if mbcode {
 		input.ActivationMethod = ActivationMethodOneTimeToken
@@ -84,7 +106,7 @@ func ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceM
 	}
 
 	var response ActivateDeviceResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +114,7 @@ func ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceM
 	return &response.Data.ActivateDevice.DeviceModules.Privacy, nil
 }
 
-func DeactivateDevice(installationToken string) (*DeviceModule, error) {
+func (api *DefaultHolocron) DeactivateDevice(installationToken string) (*DeviceModule, error) {
 	input := DeactivateDeviceInput{
 		Modules:          []ProductModule{ProductModulePrivacy},
 		DeactivationMode: DeactivationModePassive,
@@ -117,7 +139,7 @@ func DeactivateDevice(installationToken string) (*DeviceModule, error) {
 	}
 
 	var response DeactivateDeviceResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +147,7 @@ func DeactivateDevice(installationToken string) (*DeviceModule, error) {
 	return &response.Data.DeactivateDevice.DeviceModules.Privacy, nil
 }
 
-func VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses, error) {
+func (api *DefaultHolocron) VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses, error) {
 	input := VpnRegisterPublicKeyInput{
 		PublicKey: key,
 	}
@@ -146,7 +168,7 @@ func VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses
 	}
 
 	var response VpnRegisterPublicKeyResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +176,7 @@ func VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses
 	return &response.Data.VpnIpAddresses, nil
 }
 
-func GetVpnNetworkDetails(installationToken string) (*VpnNetworkDetails, error) {
+func (api *DefaultHolocron) GetVpnNetworkDetails() (*VpnNetworkDetails, error) {
 	requestBody := map[string]interface{}{
 		"query": `
       query VpnNetworkDetails {
@@ -173,7 +195,7 @@ func GetVpnNetworkDetails(installationToken string) (*VpnNetworkDetails, error) 
 	}
 
 	var response VpnNetworkDetailsResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +203,7 @@ func GetVpnNetworkDetails(installationToken string) (*VpnNetworkDetails, error) 
 	return &response.Data.Details, nil
 }
 
-func GetVpnLocations(installationToken string) (*VpnLocations, error) {
+func (api *DefaultHolocron) GetVpnLocations() (*VpnLocations, error) {
 	requestBody := map[string]interface{}{
 		"query": `
       query VpnLocations {
@@ -218,7 +240,7 @@ func GetVpnLocations(installationToken string) (*VpnLocations, error) {
 	}
 
 	var response VpnLocationsResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +248,7 @@ func GetVpnLocations(installationToken string) (*VpnLocations, error) {
 	return &response.Data.VpnLocations, nil
 }
 
-func GetVpnClientDefaults(installationToken string) (*VpnClientDefaults, error) {
+func (api *DefaultHolocron) GetVpnClientDefaults() (*VpnClientDefaults, error) {
 	requestBody := map[string]interface{}{
 		"query": `
       query VpnClientDefaults {
@@ -248,7 +270,7 @@ func GetVpnClientDefaults(installationToken string) (*VpnClientDefaults, error) 
 	}
 
 	var response VpnClientDefaultsResponse
-	err := doRequest(installationToken, &requestBody, &response)
+	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +278,7 @@ func GetVpnClientDefaults(installationToken string) (*VpnClientDefaults, error) 
 	return &response.Data.VpnClientDefaults, nil
 }
 
-func doRequest(installationToken string, body *map[string]interface{}, responseBody any) error {
+func (api *DefaultHolocron) doRequest(installationToken string, body *map[string]interface{}, responseBody any) error {
 	jsonValue, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -267,12 +289,16 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 		return err
 	}
 
-	err = applyDefaultHeaders(installationToken, request)
-  if err != nil {
-    return err
-  }
+	request.Header.Set("Content-Type", "application/json")
 
-	if config.Debug {
+	machineId, err := api.mIdProvider.Get()
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("X-Device-Bearer", fmt.Sprintf("%s|%s", installationToken, machineId))
+
+	if config.Debug() {
 		reqDump, err := httputil.DumpRequestOut(request, true)
 		if err != nil {
 			log.Fatal(err)
@@ -287,7 +313,7 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 	}
 	defer response.Body.Close()
 
-	if config.Debug {
+	if config.Debug() {
 		respDump, err := httputil.DumpResponse(response, true)
 		if err != nil {
 			log.Fatal(err)
@@ -301,32 +327,19 @@ func doRequest(installationToken string, body *map[string]interface{}, responseB
 		return err
 	}
 
-  var errorResponse ErrorResponse
-  err = json.Unmarshal(data, &errorResponse)
-  if err != nil {
-    return err
-  }
-  if len(errorResponse.Errors) > 0 {
-    return errors.New(errorResponse.Errors[0].Message)
-  }
+	var errorResponse ErrorResponse
+	err = json.Unmarshal(data, &errorResponse)
+	if err != nil {
+		return err
+	}
+	if len(errorResponse.Errors) > 0 {
+		return errors.New(errorResponse.Errors[0].Message)
+	}
 
 	err = json.Unmarshal(data, &responseBody)
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func applyDefaultHeaders(installationToken string, request *http.Request) error {
-	request.Header.Set("Content-Type", "application/json")
-
-	machineId, err := config.GetMachineId()
-	if err != nil {
-		return err
-	}
-
-	request.Header.Set("X-Device-Bearer", fmt.Sprintf("%s|%s", installationToken, machineId))
 
 	return nil
 }

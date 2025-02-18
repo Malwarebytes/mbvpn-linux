@@ -12,17 +12,37 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-func Servers() {
-	installationToken, _ := config.GetInstallationToken()
+type Vpn interface {
+	Servers()
+	Up(cfg string)
+}
 
-	publicKey, _, privateKey, _ := generateKeys()
+type DefaultVpn struct {
+	cfgProvider config.ConfigProvider
+	holocron    remote.Holocron
+}
 
-	ipAddrs, err := remote.VpnRegisterPublicKey(installationToken, publicKey.String())
+func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron) *DefaultVpn {
+	return &DefaultVpn{
+		cfgProvider: cfgProvider,
+		holocron:    holocron,
+	}
+}
+
+func (vpn *DefaultVpn) Servers() {
+	installationToken, err := vpn.cfgProvider.GetInstallationToken()
 	if err != nil {
 		log.Panic(err)
 	}
 
-	locations, err := remote.GetVpnLocations(installationToken)
+	publicKey, _, privateKey, _ := generateKeys()
+
+	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
+	if err != nil {
+		log.Panic(err)
+	}
+
+	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -34,7 +54,7 @@ func Servers() {
 			for i, server := range city.Servers {
 				cfgName := fmt.Sprintf("mb-%s-%d", city.Code, i)
 
-				if config.Debug {
+				if config.Debug() {
 					log.Printf("Creating config: %s\n", cfgName)
 				}
 
@@ -42,7 +62,7 @@ func Servers() {
 				if err != nil {
 					log.Panic(err)
 				} else {
-					if config.Debug {
+					if config.Debug() {
 						log.Printf("Config created: %s\n", cfgName)
 					}
 					fmt.Printf("    %s\n", cfgName)
@@ -51,7 +71,7 @@ func Servers() {
 		}
 	}
 
-  fmt.Println(`Call "mbvpn up <server>" to connect and "mbvpn down <server>" to disconnect.`)
+	fmt.Println(`Call "mbvpn up <server>" to connect and "mbvpn down <server>" to disconnect.`)
 
 	// networkDetails, err := remote.GetVpnNetworkDetails(installationToken)
 	// if err != nil {
@@ -69,20 +89,19 @@ func Servers() {
 	// fmt.Printf("Current country: %s", networkDetails.Geo.Country)
 }
 
-func Up(cfg string) {
+func (vpn *DefaultVpn) Up(cfg string) {
 	_, err := os.Stat(cfg)
 	if errors.Is(err, os.ErrNotExist) {
-    fmt.Fprintf(os.Stderr, "Config %s doesn't exist. Use \"servers\" command to see available configurations.\n", cfg)
-    os.Exit(2)
-  }
+		fmt.Fprintf(os.Stderr, "Config %s doesn't exist. Use \"servers\" command to see available configurations.\n", cfg)
+		os.Exit(2)
+	}
 
-  fmt.Printf("Connection to %s...\n", cfg)
+	fmt.Printf("Connection to %s...\n", cfg)
 
-  //TODO
-  // _ := config.Debug
+	// TODO
+	// _ := config.Debug
 
-
-  fmt.Println("Connected!")
+	fmt.Println("Connected!")
 }
 
 func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {

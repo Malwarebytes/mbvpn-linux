@@ -37,7 +37,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().Bool("debug", false, "Show debug output.")
+	// rootCmd.PersistentFlags().Bool("debug", false, "Show debug output.")
 }
 
 

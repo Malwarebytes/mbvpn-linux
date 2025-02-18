@@ -3,15 +3,46 @@ package remote
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 const(
   licenseKey = "CBKGF-JRFZJ-FZYF8-4QR8E"
+  machineId = "JDfhsjdfKDJfhgdj8fsf3"
 )
 
+type MockMachineIdProvider struct {
+  mId string
+}
+func (mip *MockMachineIdProvider) Get() (string, error) {
+  if mip.mId == "" {
+    mip.mId = uuid.New().String()
+  }
+  return mip.mId, nil
+}
+
+type MockConfigProvider struct {
+  it string
+}
+
+func (cp *MockConfigProvider) StoreInstallationToken(token string) {
+  cp.it = token
+}
+
+func (cp *MockConfigProvider) GetInstallationToken() (string, error) {
+  return cp.it, nil
+}
+
+func (cp *MockConfigProvider) DeleteConfig() error {
+  cp.it = ""
+  return nil
+}
+
+var h = NewDefaultHolocron(&MockMachineIdProvider{})
+
 func TestRegisterDevice(t *testing.T) {
-  token, err := RegisterDevice()
+  token, err := h.RegisterDevice()
   if err != nil {
 		t.Fatalf(`RegisterDevice() = %v`, err)
   }
@@ -22,13 +53,13 @@ func TestRegisterDevice(t *testing.T) {
 
 //TODO add test with MBCode
 func TestActivateDeviceWithLicenseKey(t *testing.T) {
-  token, err := RegisterDevice()
+  installationToken, err := h.RegisterDevice()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  m, err := ActivateDevice(token, licenseKey, false)
-  defer DeactivateDevice(token)
+  m, err := h.ActivateDevice(installationToken, licenseKey, false)
+  defer h.DeactivateDevice(installationToken)
 
   if err != nil {
 		t.Fatalf(`ActivateDevice(token, licenseKey, false) = %v`, err)
@@ -40,17 +71,17 @@ func TestActivateDeviceWithLicenseKey(t *testing.T) {
 }
 
 func TestDeactivateDevice(t *testing.T) {
-  token, err := RegisterDevice()
+  installationToken, err := h.RegisterDevice()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  _, err = ActivateDevice(token, licenseKey, false)
+  _, err = h.ActivateDevice(installationToken, licenseKey, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  m, err := DeactivateDevice(token)
+  m, err := h.DeactivateDevice(installationToken)
   if err != nil {
 		t.Fatalf(`DeactivateDevice(token) = %v`, err)
   }
@@ -60,16 +91,16 @@ func TestDeactivateDevice(t *testing.T) {
 }
 
 func TestVpnRegisterPublicKey(t *testing.T) {
-  token, err := RegisterDevice()
+  installationToken, err := h.RegisterDevice()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  _, err = ActivateDevice(token, licenseKey, false)
+  _, err = h.ActivateDevice(installationToken, licenseKey, false)
   if err != nil {
     t.Fatal(err)
   }
-  defer DeactivateDevice(token)
+  defer h.DeactivateDevice(installationToken)
 
   wgKeys, err := wgtypes.GeneratePrivateKey()
   if err != nil {
@@ -77,7 +108,7 @@ func TestVpnRegisterPublicKey(t *testing.T) {
   }
   wgPubKey := wgKeys.PublicKey().String()
 
-  ip, err := VpnRegisterPublicKey(token, wgPubKey)
+  ip, err := h.VpnRegisterPublicKey(installationToken, wgPubKey)
   if err != nil {
     t.Fatalf(`VpnRegisterPublicKey(token, "%s") = %v`, wgPubKey, err)
   }
@@ -87,12 +118,12 @@ func TestVpnRegisterPublicKey(t *testing.T) {
 }
 
 func TestGetVpnNetworkDetails(t *testing.T) {
-  token, err := RegisterDevice()
+  _, err := h.RegisterDevice()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  d, err := GetVpnNetworkDetails(token)
+  d, err := h.GetVpnNetworkDetails()
   if err != nil {
 		t.Fatalf(`GetVpnNetworkDetails(token) = %v`, err)
   }
@@ -102,12 +133,12 @@ func TestGetVpnNetworkDetails(t *testing.T) {
 }
 
 func TestGetVpnLocations(t *testing.T) {
-  token, err := RegisterDevice()
+  _, err := h.RegisterDevice()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-  l, err := GetVpnLocations(token)
+  l, err := h.GetVpnLocations()
   if err != nil {
     t.Fatalf(`GetVpnLocations(token) = %v`, err)
   }

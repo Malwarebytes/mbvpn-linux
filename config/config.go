@@ -5,17 +5,42 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"gopkg.in/yaml.v3"
 )
 
-var Debug bool
+func Debug() bool {
+	return testing.Verbose()
+}
 
 type Config struct {
 	InstallationToken string `yaml:"installation_token"`
 }
 
-func StoreInstallationToken(token string) {
+type ConfigProvider interface {
+	StoreInstallationToken(token string)
+	GetInstallationToken() (string, error)
+	DeleteConfig() error
+}
+
+type YamlConfigProvider struct{}
+
+func NewYamlConfigProvider() *YamlConfigProvider {
+	return &YamlConfigProvider{}
+}
+
+type MachineIdProvider interface {
+	Get() (string, error)
+}
+
+type EtcFileMachineIdProvider struct{}
+
+func NewEtcFileMachineIdProvider() *EtcFileMachineIdProvider {
+  return &EtcFileMachineIdProvider{}
+}
+
+func (cp *YamlConfigProvider) StoreInstallationToken(token string) {
 	cfg := &Config{
 		InstallationToken: token,
 	}
@@ -41,16 +66,16 @@ func StoreInstallationToken(token string) {
 	encoder.Encode(cfg)
 }
 
-func GetInstallationToken() (string, error) {
+func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-    return "", err
+		return "", err
 	}
 
 	configPath := filepath.Join(home, ".config", "mbvpn", "config.yaml")
 	f, err := os.Open(configPath)
 	if err != nil {
-    return "", err
+		return "", err
 	}
 	defer f.Close()
 
@@ -58,36 +83,36 @@ func GetInstallationToken() (string, error) {
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&cfg)
 	if err != nil {
-    return "", err
+		return "", err
 	}
 
 	return cfg.InstallationToken, nil
 }
 
-func DeleteConfig() error {
-  home, err := os.UserHomeDir()
+func (cp *YamlConfigProvider) DeleteConfig() error {
+	home, err := os.UserHomeDir()
 	if err != nil {
-    return err
+		return err
 	}
 
 	configPath := filepath.Join(home, ".config", "mbvpn", "config.yaml")
 
-  err = os.Remove(configPath)
-  if err != nil {
-    return err
-  }
+	err = os.Remove(configPath)
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
-func GetMachineId() (string, error) {
-  data, err := os.ReadFile("/etc/machine-id")
-  if err != nil {
-    return "", err
-  }
+func (cp *EtcFileMachineIdProvider) Get() (string, error) {
+	data, err := os.ReadFile("/etc/machine-id")
+	if err != nil {
+		return "", err
+	}
 
-  id := string(data)
-  id = strings.TrimSuffix(id, "\n")
+	id := string(data)
+	id = strings.TrimSuffix(id, "\n")
 
-  return id, nil
+	return id, nil
 }

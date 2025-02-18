@@ -8,9 +8,27 @@ import (
 	"github.com/Malwarebytes/mbvpn/remote"
 )
 
-func Login(key string, mbcode bool) {
+type SessionManager interface {
+  Login(string, bool)
+  Logout()
+  Active() bool
+}
+
+type DefaultSessionManager struct {
+  cfgProvider config.ConfigProvider
+  holocron remote.Holocron
+}
+
+func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote.Holocron) *DefaultSessionManager {
+  return &DefaultSessionManager{
+    cfgProvider: cfgProvider,
+    holocron: holocron,
+  }
+}
+
+func (sm *DefaultSessionManager) Login(key string, mbcode bool) {
 	// Check current session
-	if Active() {
+	if sm.Active() {
 		fmt.Println("There is an active session on your device. Try logout command first if you want to re-login.")
 		return
 	}
@@ -18,41 +36,41 @@ func Login(key string, mbcode bool) {
 	fmt.Println("Welcome to Malwarebytes VPN client!")
 
 	// Register device
-	installationToken, err := remote.RegisterDevice()
+	installationToken, err := sm.holocron.RegisterDevice()
 	if err != nil {
 		log.Panic(err)
 	}
-	config.StoreInstallationToken(installationToken)
+	sm.cfgProvider.StoreInstallationToken(installationToken)
 
 	// Activate device
-	m, err := remote.ActivateDevice(installationToken, key, mbcode)
+	m, err := sm.holocron.ActivateDevice(installationToken, key, mbcode)
 	if err != nil {
 		println("Cannot activate this device.")
-		config.DeleteConfig()
+		sm.cfgProvider.DeleteConfig()
 		log.Panic(err)
 	}
 	fmt.Printf("License status: %s\n", m.Status)
 }
 
-func Logout() {
+func (sm *DefaultSessionManager) Logout() {
 	fmt.Println("Logging out...")
 
-	installationToken, err := config.GetInstallationToken()
+	installationToken, err := sm.cfgProvider.GetInstallationToken()
 	if err == nil {
-		m, err := remote.DeactivateDevice(installationToken)
+		m, err := sm.holocron.DeactivateDevice(installationToken)
 		if err != nil {
 			println("Something goes wrong with deactivation. Visit my.malwarebytes.com.")
 		}
 		fmt.Printf("License status: %s\n", m.Status)
 	}
 
-	err = config.DeleteConfig()
+	err = sm.cfgProvider.DeleteConfig()
 	if err != nil {
 		println("There is no active session on your device.")
 	}
 }
 
-func Active() bool {
-	installationToken, _ := config.GetInstallationToken()
+func (sm *DefaultSessionManager) Active() bool {
+	installationToken, _ := sm.cfgProvider.GetInstallationToken()
 	return installationToken != ""
 }

@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"github.com/Malwarebytes/mbvpn/config"
+	"github.com/Malwarebytes/mbvpn/remote"
 	"github.com/Malwarebytes/mbvpn/session"
 	"github.com/spf13/cobra"
 )
@@ -15,8 +16,6 @@ var loginCmd = &cobra.Command{
 	Long: `Uses provided creadentials to perform activation for this device.
    The command claimes available seat of your Malwarebytes license.`,
 	Run: func(cmd *cobra.Command, args []string) {
-    config.Debug, _ = cmd.Flags().GetBool("debug")
-
 		mbcode := false
 		key, _ := cmd.Flags().GetString("key")
 		if key == "" {
@@ -24,7 +23,14 @@ var loginCmd = &cobra.Command{
 			mbcode = true
 		}
 
-    session.Login(key, mbcode)
+		sm := session.NewDefaultSessionManager(
+			config.NewYamlConfigProvider(),
+			remote.NewDefaultHolocron(
+				config.NewEtcFileMachineIdProvider(),
+			),
+		)
+
+		sm.Login(key, mbcode)
 	},
 }
 

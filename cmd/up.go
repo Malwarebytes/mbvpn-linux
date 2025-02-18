@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Malwarebytes/mbvpn/config"
+	"github.com/Malwarebytes/mbvpn/remote"
 	"github.com/Malwarebytes/mbvpn/session"
 	"github.com/Malwarebytes/mbvpn/vpn"
 	"github.com/spf13/cobra"
@@ -24,9 +25,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		config.Debug, _ = cmd.Flags().GetBool("debug")
+		holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
+    cp := config.NewYamlConfigProvider()
+		sm := session.NewDefaultSessionManager(cp, holocron)
+		vpn := vpn.NewDefaultVpn(cp, holocron)
 
-		if session.Active() {
+		if sm.Active() {
 			vpn.Up(args[0])
 		} else {
 			fmt.Println(`There is no active session on your device. Try "login" command first.`)
