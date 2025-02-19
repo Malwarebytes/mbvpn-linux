@@ -37,7 +37,7 @@ type MachineIdProvider interface {
 type EtcFileMachineIdProvider struct{}
 
 func NewEtcFileMachineIdProvider() MachineIdProvider {
-  return &EtcFileMachineIdProvider{}
+	return &EtcFileMachineIdProvider{}
 }
 
 func (cp *YamlConfigProvider) StoreInstallationToken(token string) {
@@ -56,7 +56,7 @@ func (cp *YamlConfigProvider) StoreInstallationToken(token string) {
 	}
 
 	configPath := filepath.Join(configDir, "config.yaml")
-	f, err := os.Create(configPath)
+	f, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Panic(err)
 	}
