@@ -35,11 +35,13 @@ type Holocron interface {
 }
 
 type DefaultHolocron struct {
+	baseUrl     string
 	mIdProvider config.MachineIdProvider
 }
 
 func NewDefaultHolocron(mIdProvider config.MachineIdProvider) Holocron {
 	return &DefaultHolocron{
+		baseUrl:     holocronStageUrl,
 		mIdProvider: mIdProvider,
 	}
 }
@@ -284,7 +286,7 @@ func (api *DefaultHolocron) doRequest(installationToken string, body *map[string
 		return err
 	}
 
-	request, err := http.NewRequest("POST", holocronStageUrl, bytes.NewBuffer(jsonValue))
+	request, err := http.NewRequest("POST", api.baseUrl, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
 	}

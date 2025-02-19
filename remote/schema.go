@@ -1,11 +1,11 @@
 package remote
 
 type ErrorResponse struct {
-  Errors []Error `json:"errors"`
+	Errors []Error `json:"errors"`
 }
 
 type Error struct {
-  Message string `json:"message"`
+	Message string `json:"message"`
 }
 
 type ProductModule string
@@ -199,9 +199,9 @@ type VpnClientDefaultsResponseData struct {
 }
 
 type VpnClientDefaults struct {
-	IPv4           VpnIpDefaults `json:"ipv4"`
-	IPv6           VpnIpDefaults `json:"ipv6"`
-	KeyExpiryHours int           `json:"keyExpirationHours"`
+	IPv4               VpnIpDefaults `json:"ipv4"`
+	IPv6               VpnIpDefaults `json:"ipv6"`
+	KeyExpirationHours int           `json:"keyExpirationHours"`
 }
 
 type VpnIpDefaults struct {
