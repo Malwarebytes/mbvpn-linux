@@ -56,7 +56,7 @@ func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 		return "", err
 	}
 
-	configPath := filepath.Join(home, ".config", "mbvpn", "config.yaml")
+	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 	f, err := os.Open(configPath)
 	if err != nil {
 		return "", err
