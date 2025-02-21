@@ -6,10 +6,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Malwarebytes/mbvpn/config"
-	"github.com/Malwarebytes/mbvpn/remote"
-	"github.com/Malwarebytes/mbvpn/session"
-	"github.com/Malwarebytes/mbvpn/vpn"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/session"
+	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +24,9 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-    cp := config.NewYamlConfigProvider()
-    holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
-    sm := session.NewDefaultSessionManager(cp, holocron)
+		cp := config.NewYamlConfigProvider()
+		holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
+		sm := session.NewDefaultSessionManager(cp, holocron)
 		vpn := vpn.NewDefaultVpn(cp, holocron)
 
 		if sm.Active() {

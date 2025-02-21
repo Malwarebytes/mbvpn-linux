@@ -4,26 +4,26 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Malwarebytes/mbvpn/config"
-	"github.com/Malwarebytes/mbvpn/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/remote"
 )
 
 type SessionManager interface {
-  Login(string, bool)
-  Logout()
-  Active() bool
+	Login(string, bool)
+	Logout()
+	Active() bool
 }
 
 type DefaultSessionManager struct {
-  cfgProvider config.ConfigProvider
-  holocron remote.Holocron
+	cfgProvider config.ConfigProvider
+	holocron    remote.Holocron
 }
 
 func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote.Holocron) SessionManager {
-  return &DefaultSessionManager{
-    cfgProvider: cfgProvider,
-    holocron: holocron,
-  }
+	return &DefaultSessionManager{
+		cfgProvider: cfgProvider,
+		holocron:    holocron,
+	}
 }
 
 func (sm *DefaultSessionManager) Login(key string, mbcode bool) {

@@ -6,10 +6,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Malwarebytes/mbvpn/config"
-	"github.com/Malwarebytes/mbvpn/remote"
-	"github.com/Malwarebytes/mbvpn/session"
-	"github.com/Malwarebytes/mbvpn/vpn"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/session"
+	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ to quickly create a Cobra application.`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
-    cp := config.NewYamlConfigProvider()
+		cp := config.NewYamlConfigProvider()
 		sm := session.NewDefaultSessionManager(cp, holocron)
 		vpn := vpn.NewDefaultVpn(cp, holocron)
 

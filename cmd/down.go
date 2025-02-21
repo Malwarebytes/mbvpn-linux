@@ -4,10 +4,9 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-
-	"github.com/Malwarebytes/mbvpn/config"
-	"github.com/Malwarebytes/mbvpn/remote"
-	"github.com/Malwarebytes/mbvpn/vpn"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 

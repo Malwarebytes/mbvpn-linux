@@ -1,16 +1,15 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/spf13/cobra"
 )
-
-
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -25,6 +24,13 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		debug, _ := cmd.Flags().GetBool("debug")
+		if debug {
+			fmt.Println("=== Running in debug mode ===")
+		}
+		config.DebugFlag = debug
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -37,7 +43,5 @@ func Execute() {
 }
 
 func init() {
-	// rootCmd.PersistentFlags().Bool("debug", false, "Show debug output.")
+	rootCmd.PersistentFlags().Bool("debug", false, "Run command in debug mode.")
 }
-
-

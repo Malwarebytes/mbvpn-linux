@@ -11,7 +11,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/Malwarebytes/mbvpn/config"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
 )
 
 const (
@@ -300,13 +300,13 @@ func (api *DefaultHolocron) doRequest(installationToken string, body *map[string
 
 	request.Header.Set("X-Device-Bearer", fmt.Sprintf("%s|%s", installationToken, machineId))
 
-	if config.Debug() {
-		reqDump, err := httputil.DumpRequestOut(request, true)
+	if config.Verbose() {
+		reqDump, err := httputil.DumpRequest(request, true)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("REQUEST:\n%s", string(reqDump))
+		fmt.Printf("REQUEST:\n%s\n", string(reqDump))
 	}
 
 	response, err := client.Do(request)
@@ -315,7 +315,7 @@ func (api *DefaultHolocron) doRequest(installationToken string, body *map[string
 	}
 	defer response.Body.Close()
 
-	if config.Debug() {
+	if config.Verbose() {
 		respDump, err := httputil.DumpResponse(response, true)
 		if err != nil {
 			log.Fatal(err)

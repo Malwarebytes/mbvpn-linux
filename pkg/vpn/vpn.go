@@ -9,15 +9,15 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/Malwarebytes/mbvpn/config"
-	"github.com/Malwarebytes/mbvpn/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type Vpn interface {
 	Servers()
 	Up(cfg string)
-  Down(cfg string)
+	Down(cfg string)
 }
 
 type DefaultVpn struct {
@@ -101,7 +101,7 @@ func (vpn *DefaultVpn) Down(cfg string) {
 	// cfgPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfg))
 
 	if cfg == "" {
-    fmt.Println("Disconnecting...")
+		fmt.Println("Disconnecting...")
 	} else {
 		fmt.Printf("Disconnecting from %s...\n", cfg)
 	}

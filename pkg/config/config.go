@@ -4,15 +4,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	"testing"
 
 	"gopkg.in/yaml.v3"
 )
-
-func Debug() bool {
-	return testing.Testing() && testing.Verbose()
-}
 
 type Config struct {
 	InstallationToken string `yaml:"installation_token"`
@@ -28,16 +22,6 @@ type YamlConfigProvider struct{}
 
 func NewYamlConfigProvider() ConfigProvider {
 	return &YamlConfigProvider{}
-}
-
-type MachineIdProvider interface {
-	Get() (string, error)
-}
-
-type EtcFileMachineIdProvider struct{}
-
-func NewEtcFileMachineIdProvider() MachineIdProvider {
-	return &EtcFileMachineIdProvider{}
 }
 
 func (cp *YamlConfigProvider) StoreInstallationToken(token string) {
@@ -103,16 +87,4 @@ func (cp *YamlConfigProvider) DeleteConfig() error {
 	}
 
 	return nil
-}
-
-func (cp *EtcFileMachineIdProvider) Get() (string, error) {
-	data, err := os.ReadFile("/etc/machine-id")
-	if err != nil {
-		return "", err
-	}
-
-	id := string(data)
-	id = strings.TrimSuffix(id, "\n")
-
-	return id, nil
 }
