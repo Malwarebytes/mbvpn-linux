@@ -39,7 +39,7 @@ func (cp *YamlConfigProvider) StoreInstallationToken(token string) {
 		log.Panic(err)
 	}
 
-	configPath := filepath.Join(configDir, "config.yaml")
+	configPath := filepath.Join(configDir, "config.yml")
 	f, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Panic(err)
@@ -79,7 +79,7 @@ func (cp *YamlConfigProvider) DeleteConfig() error {
 		return err
 	}
 
-	configPath := filepath.Join(home, ".config", "mbvpn", "config.yaml")
+	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 
 	err = os.Remove(configPath)
 	if err != nil {

@@ -71,6 +71,9 @@ func (sm *DefaultSessionManager) Logout() {
 }
 
 func (sm *DefaultSessionManager) Active() bool {
-	installationToken, _ := sm.cfgProvider.GetInstallationToken()
+	installationToken, err := sm.cfgProvider.GetInstallationToken()
+  if err != nil {
+    log.Panic(err)
+  }
 	return installationToken != ""
 }

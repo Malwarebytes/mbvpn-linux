@@ -25,7 +25,11 @@ to quickly create a Cobra application.`,
 		cp := config.NewYamlConfigProvider()
 		vpn := vpn.NewDefaultVpn(cp, holocron)
 
-		vpn.Down(args[0])
+    server := ""
+    if len(args) > 0 {
+      server = args[0]
+    }
+		vpn.Down(server)
 	},
 }
 

@@ -98,43 +98,44 @@ func (vpn *DefaultVpn) Up(cfg string) {
 }
 
 func (vpn *DefaultVpn) Down(cfg string) {
-	// cfgPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfg))
-
 	if cfg == "" {
-		fmt.Println("Disconnecting...")
+		servers, err := getConnectedServers()
+		if err != nil {
+			log.Panic(err)
+		} else {
+			for _, s := range servers {
+				vpn.Down(s)
+			}
+		}
 	} else {
 		fmt.Printf("Disconnecting from %s...\n", cfg)
-	}
 
-	cmd := exec.Command("sudo", "wg-quick", "down", cfg)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
+		cmd := exec.Command("sudo", "wg-quick", "down", cfg)
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
 
-	if err := cmd.Run(); err != nil {
-		log.Panic(err)
-	} else {
-		fmt.Println("Disconnected.")
+		if err := cmd.Run(); err != nil {
+			log.Panic(err)
+		} else {
+			fmt.Println("Disconnected.")
+		}
 	}
 }
 
 func (vpn *DefaultVpn) Status() {
-	cmd := exec.Command("sudo", "wg", "show")
-	output, err := cmd.Output()
+	servers, err := getConnectedServers()
 	if err != nil {
 		log.Panic(err)
 		return
 	}
 
-	lines := strings.Split(string(output), "\n")
-	n := strings.Count(string(output), "interface:")
-	if n == 0 {
+	if len(servers) == 0 {
 		fmt.Println("No active connections.")
 	} else {
-		for _, l := range lines {
-			if strings.HasPrefix(l, "interface") {
-				fmt.Printf("Connected to: %s\n", strings.TrimPrefix(l, "interface: "))
-			}
+		fmt.Println("Connected to servers:")
+		for _, s := range servers {
+			fmt.Printf("\tConnected to: %s\n", s)
 		}
 	}
 }
@@ -204,4 +205,24 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 	}
 
 	return nil
+}
+
+func getConnectedServers() ([]string, error) {
+	cmd := exec.Command("sudo", "wg", "show")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(string(output), "\n")
+	n := strings.Count(string(output), "interface:")
+	s := make([]string, n)
+	i := 0
+	for _, l := range lines {
+		if strings.HasPrefix(l, "interface") {
+			s[i] = strings.TrimPrefix(l, "interface: ")
+			i++
+		}
+	}
+	return s, nil
 }
