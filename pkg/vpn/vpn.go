@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
@@ -18,6 +19,7 @@ type Vpn interface {
 	Servers()
 	Up(cfg string)
 	Down(cfg string)
+	Status()
 }
 
 type DefaultVpn struct {
@@ -81,8 +83,6 @@ func (vpn *DefaultVpn) Servers() {
 }
 
 func (vpn *DefaultVpn) Up(cfg string) {
-	// cfgPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfg))
-
 	fmt.Printf("Connection to %s...\n", cfg)
 
 	cmd := exec.Command("sudo", "wg-quick", "up", cfg)
@@ -115,6 +115,27 @@ func (vpn *DefaultVpn) Down(cfg string) {
 		log.Panic(err)
 	} else {
 		fmt.Println("Disconnected.")
+	}
+}
+
+func (vpn *DefaultVpn) Status() {
+	cmd := exec.Command("sudo", "wg", "show")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Panic(err)
+		return
+	}
+
+	lines := strings.Split(string(output), "\n")
+	n := strings.Count(string(output), "interface:")
+	if n == 0 {
+		fmt.Println("No active connections.")
+	} else {
+		for _, l := range lines {
+			if strings.HasPrefix(l, "interface") {
+				fmt.Printf("Connected to: %s\n", strings.TrimPrefix(l, "interface: "))
+			}
+		}
 	}
 }
 
