@@ -47,8 +47,8 @@ type ActivateDeviceInput struct {
 	LicenseKey       string           `json:"licenseKey"`
 }
 
-type ActivateDeviceResponse struct {
-	Data ActivateDeviceResponseData `json:"data"`
+type HolocronResponse[D any] struct {
+  Data D `json:"data"`
 }
 
 type ActivateDeviceResponseData struct {
@@ -60,16 +60,8 @@ type DeactivateDeviceInput struct {
 	DeactivationMode DeactivationMode `json:"deactivationMode"`
 }
 
-type DeactivateDeviceResponse struct {
-	Data DeactivateDeviceResponseData `json:"data"`
-}
-
 type DeactivateDeviceResponseData struct {
 	DeactivateDevice DeviceOutput `json:"deactivateDevice"`
-}
-
-type RegisterDeviceResponse struct {
-	Data RegisterDeviceResponseData `json:"data"`
 }
 
 type RegisterDeviceResponseData struct {
@@ -110,10 +102,6 @@ type VpnRegisterPublicKeyInput struct {
 	PublicKey string `json:"publicKey"`
 }
 
-type VpnRegisterPublicKeyResponse struct {
-	Data VpnRegisterPublicKeyResponseData `json:"data"`
-}
-
 type VpnRegisterPublicKeyResponseData struct {
 	VpnIpAddresses VpnIpAddresses `json:"vpnRegisterPublicKey"`
 }
@@ -122,10 +110,6 @@ type VpnIpAddresses struct {
 	IpV4               string `json:"ipv4"`
 	IpV6               string `json:"ipv6"`
 	KeyExpirationHours int    `json:"keyExpirationHours"`
-}
-
-type VpnNetworkDetailsResponse struct {
-	Data VpnNetworkDetailsResponseData `json:"data"`
 }
 
 type VpnNetworkDetailsResponseData struct {
@@ -143,10 +127,6 @@ type Geo struct {
 	City      string  `json:"city"`
 	Latitude  float32 `json:"latitude"`
 	Longitude float32 `json:"longitude"`
-}
-
-type VpnLocationsResponse struct {
-	Data VpnLocationsResponseData `json:"data"`
 }
 
 type VpnLocationsResponseData struct {
@@ -188,10 +168,6 @@ type Server struct {
 type PortRange struct {
 	From int `json:"from"`
 	To   int `json:"to"`
-}
-
-type VpnClientDefaultsResponse struct {
-	Data VpnClientDefaultsResponseData `json:"data"`
 }
 
 type VpnClientDefaultsResponseData struct {

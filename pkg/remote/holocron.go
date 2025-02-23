@@ -67,7 +67,7 @@ func (api *DefaultHolocron) RegisterDevice() (string, error) {
 		},
 	}
 
-	var response RegisterDeviceResponse
+	var response HolocronResponse[RegisterDeviceResponseData]
 	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return "", err
@@ -107,7 +107,7 @@ func (api *DefaultHolocron) ActivateDevice(installationToken string, key string,
 		},
 	}
 
-	var response ActivateDeviceResponse
+	var response HolocronResponse[ActivateDeviceResponseData]
 	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (api *DefaultHolocron) DeactivateDevice(installationToken string) (*DeviceM
 		},
 	}
 
-	var response DeactivateDeviceResponse
+	var response HolocronResponse[DeactivateDeviceResponseData]
 	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (api *DefaultHolocron) VpnRegisterPublicKey(installationToken string, key s
 		},
 	}
 
-	var response VpnRegisterPublicKeyResponse
+	var response HolocronResponse[VpnRegisterPublicKeyResponseData]
 	err := api.doRequest(installationToken, &requestBody, &response)
 	if err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (api *DefaultHolocron) GetVpnNetworkDetails() (*VpnNetworkDetails, error) {
     `,
 	}
 
-	var response VpnNetworkDetailsResponse
+	var response HolocronResponse[VpnNetworkDetailsResponseData]
 	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (api *DefaultHolocron) GetVpnLocations() (*VpnLocations, error) {
     `,
 	}
 
-	var response VpnLocationsResponse
+	var response HolocronResponse[VpnLocationsResponseData]
 	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func (api *DefaultHolocron) GetVpnClientDefaults() (*VpnClientDefaults, error) {
     `,
 	}
 
-	var response VpnClientDefaultsResponse
+	var response HolocronResponse[VpnClientDefaultsResponseData]
 	err := api.doRequest("", &requestBody, &response)
 	if err != nil {
 		return nil, err
