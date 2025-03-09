@@ -54,6 +54,14 @@ func (vpn *DefaultVpn) Servers() {
 		log.Panic(err)
 	}
 
+	fmt.Println("Creating VPN configurations...")
+
+	cmd := exec.Command("sudo", "echo", "Permission granted.")
+	err = cmd.Run()
+	if err != nil {
+		log.Panic(err)
+	}
+
 	for _, country := range locations.Countries {
 		fmt.Printf("%s:\n", country.Name)
 		for _, city := range country.Cities {
