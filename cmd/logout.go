@@ -4,28 +4,17 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/spf13/cobra"
 )
 
-var logoutCmd = &cobra.Command{
-	Use:   "logout",
-	Short: "Logout this device.",
-	Long:  `Deactivates this device seat and cleans local configuration.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		sm := session.NewDefaultSessionManager(
-			config.NewYamlConfigProvider(),
-			remote.NewDefaultHolocron(
-				config.NewEtcFileMachineIdProvider(),
-			),
-		)
-
-		sm.Logout()
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(logoutCmd)
+func NewLogoutCommand(sm session.SessionManager) *cobra.Command {
+  return &cobra.Command{
+    Use:   "logout",
+    Short: "Logout this device.",
+    Long:  `Deactivates this device seat and cleans local configuration.`,
+    Run: func(cmd *cobra.Command, args []string) {
+      sm.Logout()
+    },
+  }
 }

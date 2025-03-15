@@ -2,7 +2,11 @@ package config
 
 import "testing"
 
-var DebugFlag bool
+var (
+	DebugFlag   bool
+	BuildEnv    string
+	HolocronUrl string
+)
 
 func Debug() bool {
 	return DebugFlag || testing.Testing()

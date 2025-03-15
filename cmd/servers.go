@@ -6,37 +6,30 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 
 // serversCmd represents the servers command
-var serversCmd = &cobra.Command{
-	Use:   "servers",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
+func NewServersCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "servers",
+		Short: "A brief description of your command",
+		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cp := config.NewYamlConfigProvider()
-		holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
-		sm := session.NewDefaultSessionManager(cp, holocron)
-		vpn := vpn.NewDefaultVpn(cp, holocron)
+		Run: func(cmd *cobra.Command, args []string) {
+			if sm.Active() {
+				vpn.Servers()
+			} else {
+				fmt.Println(`There is no active session on your device. Try "login" command first.`)
+			}
+		},
+	}
 
-		if sm.Active() {
-			vpn.Servers()
-		} else {
-			fmt.Println(`There is no active session on your device. Try "login" command first.`)
-		}
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(serversCmd)
+	return cmd
 }
