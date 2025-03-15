@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	holocronStageUrl = "https://idms-holocron-stage.mwbsys.com/graphql"
+	// baseUrl = "https://idms-holocron-stage.mwbsys.com/graphql"
 	productCode      = "MBMA-C"
 	productVersion   = "5.14.0"
 )
@@ -41,7 +41,7 @@ type DefaultHolocron struct {
 
 func NewDefaultHolocron(mIdProvider config.MachineIdProvider) Holocron {
 	return &DefaultHolocron{
-		baseUrl:     holocronStageUrl,
+		baseUrl:     config.HolocronUrl,
 		mIdProvider: mIdProvider,
 	}
 }
