@@ -48,6 +48,8 @@ func init() {
 	rootCmd.AddCommand(NewLoginCommand(sm))
   rootCmd.AddCommand(NewLogoutCommand(sm))
 	rootCmd.AddCommand(NewServersCommand(sm, vpn))
+	rootCmd.AddCommand(NewCountriesCommand(sm, vpn))
+	rootCmd.AddCommand(NewCitiesCommand(sm, vpn))
   rootCmd.AddCommand(NewUpCommand(sm, vpn))
   rootCmd.AddCommand(NewDownCommand(vpn))
   rootCmd.AddCommand(NewStatusCommand(vpn))

@@ -16,7 +16,7 @@ import (
 )
 
 type Vpn interface {
-	Servers()
+	Servers(showCities bool, showServers bool)
 	Up(cfg string)
 	Down(cfg string)
 	Status()
@@ -34,7 +34,7 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron) 
 	}
 }
 
-func (vpn *DefaultVpn) Servers() {
+func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 	installationToken, err := vpn.cfgProvider.GetInstallationToken()
 	if err != nil {
 		log.Panic(err)
@@ -63,9 +63,11 @@ func (vpn *DefaultVpn) Servers() {
 	}
 
 	for _, country := range locations.Countries {
-		fmt.Printf("%s:\n", country.Name)
+		fmt.Printf("%s\n", country.Name)
 		for _, city := range country.Cities {
-			fmt.Printf("  %s:\n", city.Name)
+			if showCities {
+				fmt.Printf("  %s\n", city.Name)
+			}
 			for i, server := range city.Servers {
 				cfgName := fmt.Sprintf("mb-%s-%d", city.Code, i)
 
@@ -80,7 +82,9 @@ func (vpn *DefaultVpn) Servers() {
 					if config.Debug() {
 						log.Printf("Config created: %s\n", cfgName)
 					}
-					fmt.Printf("    %s\n", cfgName)
+					if showServers {
+						fmt.Printf("    %s\n", cfgName)
+					}
 				}
 			}
 		}
