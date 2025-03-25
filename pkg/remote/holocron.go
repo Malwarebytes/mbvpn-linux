@@ -25,6 +25,7 @@ var client = &http.Client{Timeout: time.Second * 10}
 type Holocron interface {
 	RegisterDevice() (string, error)
 	ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error)
+  CheckDevice(installationToken string) (*DeviceModule, error)
 	DeactivateDevice(installationToken string) (*DeviceModule, error)
 	VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses, error)
 	GetVpnNetworkDetails() (*VpnNetworkDetails, error)
@@ -114,6 +115,38 @@ func (api *DefaultHolocron) ActivateDevice(installationToken string, key string,
 	}
 
 	return &response.Data.ActivateDevice.DeviceModules.Privacy, nil
+}
+
+func (api *DefaultHolocron) CheckDevice(installationToken string) (*DeviceModule, error) {
+	input := CheckDeviceInput{
+		Modules:        []ProductModule{ProductModulePrivacy},
+	}
+
+	requestBody := map[string]interface{}{
+		"query": `
+      mutation CheckDevice($input: CheckDeviceInput!) {
+        checkDevice(input: $input) {
+          deviceModules {
+            privacy {
+              status
+              termEndsOn
+            }
+          }
+        }
+      }
+    `,
+		"variables": map[string]interface{}{
+			"input": input,
+		},
+	}
+
+	var response HolocronResponse[CheckDeviceResponseData]
+	err := api.doRequest(installationToken, &requestBody, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.Data.CheckDevice.DeviceModules.Privacy, nil
 }
 
 func (api *DefaultHolocron) DeactivateDevice(installationToken string) (*DeviceModule, error) {

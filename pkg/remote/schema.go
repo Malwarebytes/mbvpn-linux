@@ -39,6 +39,14 @@ type RegisterDeviceInput struct {
 	Modules        []ProductModule `json:"modules"`
 }
 
+type CheckDeviceInput struct {
+	Modules          []ProductModule  `json:"modules"`
+}
+
+type CheckDeviceResponseData struct {
+  CheckDevice DeviceOutput `json:"checkDevice"`
+}
+
 type ActivateDeviceInput struct {
 	Modules          []ProductModule  `json:"modules"`
 	ActivationMethod ActivationMethod `json:"activationMethod"`

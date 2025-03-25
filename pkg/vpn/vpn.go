@@ -40,6 +40,15 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 		log.Panic(err)
 	}
 
+  m, err := vpn.holocron.CheckDevice(installationToken)
+  if err != nil {
+    log.Panic(err)
+  }
+  if m.Status != remote.DeviceStatusLicensed {
+    fmt.Println("You need to activate your device first. Use `mbvpn login` to activate.")
+    return
+  }
+
 	publicKey, _, privateKey, _ := generateKeys()
 
 	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
