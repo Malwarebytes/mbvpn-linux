@@ -12,6 +12,7 @@ import (
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/servers"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -62,6 +63,10 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	//Saving to json
+	serverStorage := servers.DefaultServerStorage{}
+	_ = serverStorage.Save(locations)
 
 	fmt.Println("Creating VPN configurations...")
 
