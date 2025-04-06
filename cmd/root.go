@@ -9,6 +9,7 @@ import (
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn/pkg/servers"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
@@ -43,7 +44,8 @@ func init() {
 	cp := config.NewYamlConfigProvider()
 	holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
 	sm := session.NewDefaultSessionManager(cp, holocron)
-	vpn := vpn.NewDefaultVpn(cp, holocron)
+	ss := servers.NewDefaultServerStorage()
+	vpn := vpn.NewDefaultVpn(cp, holocron, ss)
 
 	rootCmd.AddCommand(NewLoginCommand(sm))
   rootCmd.AddCommand(NewLogoutCommand(sm))

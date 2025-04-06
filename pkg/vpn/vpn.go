@@ -3,7 +3,6 @@ package vpn
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -24,14 +23,16 @@ type Vpn interface {
 }
 
 type DefaultVpn struct {
-	cfgProvider config.ConfigProvider
-	holocron    remote.Holocron
+	cfgProvider   config.ConfigProvider
+	holocron      remote.Holocron
+	serverStorage servers.ServerStorage
 }
 
-func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron) Vpn {
+func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage) Vpn {
 	return &DefaultVpn{
-		cfgProvider: cfgProvider,
-		holocron:    holocron,
+		cfgProvider:   cfgProvider,
+		holocron:      holocron,
+		serverStorage: serverStorage,
 	}
 }
 
@@ -41,22 +42,14 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 		log.Panic(err)
 	}
 
-  m, err := vpn.holocron.CheckDevice(installationToken)
-  if err != nil {
-    log.Panic(err)
-  }
-  if m.Status != remote.DeviceStatusLicensed {
-    fmt.Println("You need to activate your device first. Use `mbvpn login` to activate.")
-    return
-  }
-
-	publicKey, _, privateKey, _ := generateKeys()
-
-	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
+	m, err := vpn.holocron.CheckDevice(installationToken)
 	if err != nil {
 		log.Panic(err)
 	}
-
+	if m.Status != remote.DeviceStatusLicensed {
+		fmt.Println("You need to activate your device first. Use `mbvpn login` to activate.")
+		return
+	}
 	fmt.Println("Fetching servers...")
 
 	locations, err := vpn.holocron.GetVpnLocations()
@@ -64,17 +57,14 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 		log.Panic(err)
 	}
 
-	//Saving to json
 	serverStorage := servers.DefaultServerStorage{}
-	_ = serverStorage.Save(locations)
+	err = serverStorage.Save(locations)
+	if err != nil {
+		fmt.Println("Failed to save server list:", err)
+		return
+	}
 
 	fmt.Println("Creating VPN configurations...")
-
-	cmd := exec.Command("sudo", "echo", "Permission granted.")
-	err = cmd.Run()
-	if err != nil {
-		log.Panic(err)
-	}
 
 	for _, country := range locations.Countries {
 		fmt.Printf("%s\n", country.Name)
@@ -82,23 +72,9 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 			if showCities {
 				fmt.Printf("  %s\n", city.Name)
 			}
-			for i, server := range city.Servers {
-				cfgName := fmt.Sprintf("mb-%s-%d", city.Code, i)
-
-				if config.Debug() {
-					log.Printf("Creating config: %s\n", cfgName)
-				}
-
-				err := writeConfig(cfgName, server, privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
-				if err != nil {
-					log.Panic(err)
-				} else {
-					if config.Debug() {
-						log.Printf("Config created: %s\n", cfgName)
-					}
-					if showServers {
-						fmt.Printf("    %s\n", cfgName)
-					}
+			for _, s := range city.Servers {
+				if showServers {
+					fmt.Printf("    %s\n", s.Hostname)
 				}
 			}
 		}
@@ -109,9 +85,37 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 }
 
 func (vpn *DefaultVpn) Up(cfg string) {
-	fmt.Printf("Connection to %s...\n", cfg)
+	installationToken, err := vpn.cfgProvider.GetInstallationToken()
+	if err != nil {
+		log.Panic(err)
+	}
 
-	cmd := exec.Command("sudo", "wg-quick", "up", cfg)
+	fmt.Printf("Connecting to %s...\n", cfg)
+
+	server, err := vpn.serverStorage.GetByServerName(cfg)
+	if err != nil {
+		log.Panic(err)
+	}
+	if server == nil {
+		fmt.Printf("Server %s not found.\n", cfg)
+		return
+	}
+
+	publicKey, _, privateKey, _ := generateKeys()
+
+	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
+	if err != nil {
+		log.Panic(err)
+	}
+
+	cfgPath, err := writeConfig(cfg[0:8], *server, privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
+	if err != nil {
+		log.Panic(err)
+		return
+	}
+
+	fmt.Printf("Calling `sudo wg-quick up %s`\n", cfgPath)
+	cmd := exec.Command("sudo", "wg-quick", "up", cfgPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -136,7 +140,12 @@ func (vpn *DefaultVpn) Down(cfg string) {
 	} else {
 		fmt.Printf("Disconnecting from %s...\n", cfg)
 
-		cmd := exec.Command("sudo", "wg-quick", "down", cfg)
+		cfgDir, err := ensureConfigDir()
+		if err != nil {
+			log.Panic(err)
+			return
+		}
+		cmd := exec.Command("sudo", "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		cmd.Stdin = os.Stdin
@@ -167,7 +176,7 @@ func (vpn *DefaultVpn) Status() {
 	network, err := vpn.holocron.GetVpnNetworkDetails()
 	if err != nil {
 		fmt.Println("Failed to get network details.")
-		if config.Debug() { 
+		if config.Debug() {
 			log.Panic(err)
 		}
 		return
@@ -206,9 +215,7 @@ func fileExists(filename string) bool {
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) error {
-	configPath := filepath.Join("/etc/wireguard", fmt.Sprintf("%s.conf", cfgName))
-
+func writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) (string, error) {
 	content := fmt.Sprintf(`[Interface]
 PrivateKey = %s
 Address = %s, %s
@@ -224,26 +231,13 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 		server.IPv4AddrIn,
 	)
 
-	cmd := exec.Command("sudo", "tee", configPath)
-	cmd.Stderr = os.Stderr
-
-	stdin, err := cmd.StdinPipe()
+	fullPath, err := saveWgConfig(cfgName, content)
 	if err != nil {
-		return err
+		fmt.Println("Failed to save config file:", err)
+		return "", err
 	}
 
-	go func() {
-		defer stdin.Close()
-		if _, err := io.WriteString(stdin, content); err != nil {
-			log.Fatal("Error writing data to stdin:", err)
-		}
-	}()
-
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return fullPath, nil
 }
 
 func getConnectedServers() ([]string, error) {
@@ -264,4 +258,34 @@ func getConnectedServers() ([]string, error) {
 		}
 	}
 	return s, nil
+}
+
+func ensureConfigDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	configDir := filepath.Join(homeDir, ".config", "mbvpn", "servers")
+
+	// Create directory with appropriate permissions if it doesn't exist
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	return configDir, nil
+}
+
+func saveWgConfig(serverName string, configContent string) (string, error) {
+	configDir, err := ensureConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	// Sanitize the server name to avoid path traversal attacks
+	serverName = filepath.Base(serverName)
+
+	// Create the file with restricted permissions (600) as it contains private keys
+	filePath := filepath.Join(configDir, serverName+".conf")
+	return filePath, os.WriteFile(filePath, []byte(configContent), 0o600)
 }

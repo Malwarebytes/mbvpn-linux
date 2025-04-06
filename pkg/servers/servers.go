@@ -16,6 +16,11 @@ const (
 type ServerStorage interface {
 	Save(locations *remote.VpnLocations) error
 	Get() (*remote.VpnLocations, error)
+	GetByServerName(name string) (*remote.Server, error)
+}
+
+func NewDefaultServerStorage() ServerStorage {
+	return &DefaultServerStorage{}
 }
 
 type DefaultServerStorage struct{}
@@ -64,4 +69,23 @@ func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
 	}
 
 	return &locations, nil
+}
+
+func (s *DefaultServerStorage) GetByServerName(name string) (*remote.Server, error) {
+	locations, err := s.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, country := range locations.Countries {
+		for _, city := range country.Cities {
+			for _, server := range city.Servers {
+				if server.Hostname == name {
+					return &server, nil
+				}
+			}
+		}
+	}
+
+	return nil, nil
 }
