@@ -15,3 +15,9 @@ install:
 
 clean:
 	go clean
+
+docker-restart:
+	docker-compose down
+	docker-compose build
+	docker-compose up -d
+	docker-compose exec mbvpn bash

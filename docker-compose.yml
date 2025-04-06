@@ -1,0 +1,11 @@
+services:
+  mbvpn:
+    build: .
+    cap_add:
+      - NET_ADMIN  # Required for VPN functionality
+    devices:
+      - /dev/net/tun:/dev/net/tun  # Required for tunnel interfaces
+    volumes:
+      - .:/app  # Mount your code for live development
+    stdin_open: true  # Keep STDIN open
+    tty: true  # Allocate a pseudo-TTY
