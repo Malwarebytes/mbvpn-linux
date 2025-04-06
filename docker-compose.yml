@@ -1,11 +1,16 @@
 services:
   mbvpn:
     build: .
+    privileged: true
     cap_add:
-      - NET_ADMIN  # Required for VPN functionality
+      - NET_ADMIN
+      - SYS_MODULE
     devices:
-      - /dev/net/tun:/dev/net/tun  # Required for tunnel interfaces
+      - /dev/net/tun:/dev/net/tun
     volumes:
-      - .:/app  # Mount your code for live development
-    stdin_open: true  # Keep STDIN open
-    tty: true  # Allocate a pseudo-TTY
+      - .:/app
+      - /lib/modules:/lib/modules
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    stdin_open: true
+    tty: true
