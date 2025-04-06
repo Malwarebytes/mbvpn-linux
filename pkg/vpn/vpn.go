@@ -159,11 +159,24 @@ func (vpn *DefaultVpn) Status() {
 	if len(servers) == 0 {
 		fmt.Println("No active connections.")
 	} else {
-		fmt.Println("Connected to servers:")
 		for _, s := range servers {
-			fmt.Printf("\tConnected to: %s\n", s)
+			fmt.Printf("Connected to: %s\n", s)
 		}
 	}
+
+	network, err := vpn.holocron.GetVpnNetworkDetails()
+	if err != nil {
+		fmt.Println("Failed to get network details.")
+		if config.Debug() { 
+			log.Panic(err)
+		}
+		return
+	}
+
+	fmt.Printf("IP Address: %s\n", network.Ip)
+	fmt.Printf("VPN enabled: %t\n", network.VpnEnabled)
+	fmt.Printf("Country: %s\n", network.Geo.Country)
+	fmt.Printf("City: %s\n", network.Geo.City)
 }
 
 func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
