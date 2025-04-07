@@ -87,7 +87,6 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		log.Panic(err)
 	}
 
-
 	server, err := vpn.serverStorage.GetByServerName(cfg)
 	if err != nil {
 		log.Panic(err)
@@ -101,18 +100,31 @@ func (vpn *DefaultVpn) Up(cfg string) {
 
 	fmt.Printf("Connecting to %s...\n", cfgName)
 
-	publicKey, _, privateKey, _ := generateKeys()
+	keyData, err := vpn.cfgProvider.Get()
+	if err != nil || keyData.PrivateKey == "" {
+		publicKey, _, privateKey, _ := generateKeys()
 
-	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
-	if err != nil {
-		log.Panic(err)
+		ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
+		if err != nil {
+			log.Panic(err)
+		}
+
+		err = vpn.cfgProvider.StoreData(privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
+		if err != nil {
+			log.Panic(err)
+			return
+		}
+
+		keyData, _ = vpn.cfgProvider.Get()
 	}
 
-	cfgPath, err := writeConfig(cfgName, *server, privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
+	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, keyData.IpV4, keyData.IpV6)
 	if err != nil {
 		log.Panic(err)
 		return
 	}
+
+	//TODO: Check if key is expired
 
 	fmt.Printf("Calling `sudo wg-quick up %s`\n", cfgPath)
 	cmd := exec.Command("sudo", "wg-quick", "up", cfgPath)

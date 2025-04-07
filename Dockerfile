@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 ENV GOFLAGS="-buildvcs=false"
+ENV PATH="/app:${PATH}"
 
 COPY go.mod go.sum ./
 RUN go mod download

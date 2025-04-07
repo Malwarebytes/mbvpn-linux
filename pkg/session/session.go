@@ -66,14 +66,26 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 	if err != nil {
 		log.Panic(err)
 	}
-	sm.cfgProvider.StoreInstallationToken(installationToken)
+	err = sm.cfgProvider.StoreInstallationToken(installationToken)
+	if err != nil {
+		log.Panic(err)
+		return
+	}
 
 	// Activate device
 	m, err := sm.holocron.ActivateDevice(installationToken, token, mbcode)
 	if err != nil {
-		println("Cannot activate this device.")
+		fmt.Println("Cannot activate this device.")
 		sm.cfgProvider.DeleteConfig()
 		log.Panic(err)
+	}
+	if m.Status != remote.DeviceStatusLicensed && m.Status != remote.DeviceStatusTrial {
+		fmt.Println("Cannot activate this device. Check your license.")
+		sm.cfgProvider.DeleteConfig()
+		if config.Debug() {
+			log.Panic(fmt.Errorf("device status: %s", m.Status))
+		}
+		return
 	}
 	fmt.Printf("License status: %s\n", m.Status)
 }
@@ -83,16 +95,12 @@ func (sm *DefaultSessionManager) Logout() {
 
 	installationToken, err := sm.cfgProvider.GetInstallationToken()
 	if err == nil {
-		m, err := sm.holocron.DeactivateDevice(installationToken)
-		if err != nil {
-			println("Something goes wrong with deactivation. Visit my.malwarebytes.com.")
-		}
-		fmt.Printf("License status: %s\n", m.Status)
+		sm.holocron.DeactivateDevice(installationToken)
 	}
 
 	err = sm.cfgProvider.DeleteConfig()
 	if err != nil {
-		println("There is no active session on your device.")
+		fmt.Println("There is no active session on your device.")
 	}
 }
 

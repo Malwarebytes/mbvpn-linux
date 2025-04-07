@@ -2,6 +2,8 @@ services:
   mbvpn:
     build: .
     privileged: true
+    env_file:
+      - ./.env
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
