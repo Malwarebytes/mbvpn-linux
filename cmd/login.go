@@ -15,20 +15,19 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 		Long: `Uses provided creadentials to perform activation for this device.
    The command claimes available seat of your Malwarebytes license.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			mbcode := false
-			key, _ := cmd.Flags().GetString("key")
+			key, _ := cmd.Flags().GetString("licenseKey")
 			if key == "" {
-				key, _ = cmd.Flags().GetString("mbcode")
-				mbcode = true
+				code, _ := cmd.Flags().GetString("mbCode")
+				sm.LoginWithCode(code)
+			} else {
+				sm.LoginWithKey(key)
 			}
-
-			sm.Login(key, mbcode)
 		},
 	}
 
-	cmd.Flags().StringP("key", "k", "", "License key.")
-	cmd.Flags().StringP("mbcode", "m", "", "MB-code.")
-	cmd.MarkFlagsOneRequired("key", "mbcode")
+	cmd.Flags().StringP("licenseKey", "k", "", "License key.")
+	cmd.Flags().StringP("mbCode", "c", "", "MB-code.")
+	cmd.MarkFlagsOneRequired("licenseKey", "mbCode")
 
 	return cmd
 }

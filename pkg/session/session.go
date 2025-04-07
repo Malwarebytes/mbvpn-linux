@@ -3,13 +3,16 @@ package session
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 )
 
 type SessionManager interface {
-	Login(string, bool)
+	LoginWithKey(string)
+	LoginWithCode(string)
+	login(string, bool)
 	Logout()
 	Active() bool
 }
@@ -26,7 +29,30 @@ func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote
 	}
 }
 
-func (sm *DefaultSessionManager) Login(key string, mbcode bool) {
+func (sm *DefaultSessionManager) LoginWithKey(key string) {
+	formattedKey := strings.ToUpper(key)
+
+	if len(formattedKey) != 23 {
+		fmt.Println("Invalid license key. License key should be 23 characters long.")
+		return
+	}
+
+	sm.login(formattedKey, false)
+}
+
+func (sm *DefaultSessionManager) LoginWithCode(code string) {
+	formattedCode := strings.ToUpper(code)
+	formattedCode = strings.TrimPrefix(formattedCode, "MB-")
+
+	if len(formattedCode) != 6 {
+		fmt.Println("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.")
+		return
+	}
+
+	sm.login(formattedCode, true)
+}
+
+func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 	// Check current session
 	if sm.Active() {
 		fmt.Println("There is an active session on your device. Try logout command first if you want to re-login.")
@@ -43,7 +69,7 @@ func (sm *DefaultSessionManager) Login(key string, mbcode bool) {
 	sm.cfgProvider.StoreInstallationToken(installationToken)
 
 	// Activate device
-	m, err := sm.holocron.ActivateDevice(installationToken, key, mbcode)
+	m, err := sm.holocron.ActivateDevice(installationToken, token, mbcode)
 	if err != nil {
 		println("Cannot activate this device.")
 		sm.cfgProvider.DeleteConfig()

@@ -13,7 +13,8 @@ import (
 
 func NewUpCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
 	return &cobra.Command{
-		Use:   "up",
+		Use:   "connect",
+		Aliases: []string{"c"},
 		Short: "A brief description of your command",
 		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
