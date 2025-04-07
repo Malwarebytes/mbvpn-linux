@@ -50,7 +50,6 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 		fmt.Println("You need to activate your device first. Use `mbvpn login` to activate.")
 		return
 	}
-	fmt.Println("Fetching servers...")
 
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
@@ -64,17 +63,15 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 		return
 	}
 
-	fmt.Println("Creating VPN configurations...")
-
 	for _, country := range locations.Countries {
-		fmt.Printf("%s\n", country.Name)
+		fmt.Printf("%s, %s\n", country.Name, country.Code)
 		for _, city := range country.Cities {
 			if showCities {
-				fmt.Printf("  %s\n", city.Name)
+				fmt.Printf("  %s, %s\n", city.Name, city.Code)
 			}
 			for _, s := range city.Servers {
 				if showServers {
-					fmt.Printf("    %s\n", s.Hostname)
+					fmt.Printf("    %s\n", strings.Split(s.Hostname, ".")[0])
 				}
 			}
 		}
@@ -90,7 +87,6 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		log.Panic(err)
 	}
 
-	fmt.Printf("Connecting to %s...\n", cfg)
 
 	server, err := vpn.serverStorage.GetByServerName(cfg)
 	if err != nil {
@@ -101,6 +97,10 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		return
 	}
 
+	cfgName := strings.Split(server.Hostname, ".")[0]
+
+	fmt.Printf("Connecting to %s...\n", cfgName)
+
 	publicKey, _, privateKey, _ := generateKeys()
 
 	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
@@ -108,7 +108,7 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		log.Panic(err)
 	}
 
-	cfgPath, err := writeConfig(cfg[0:8], *server, privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
+	cfgPath, err := writeConfig(cfgName, *server, privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
 	if err != nil {
 		log.Panic(err)
 		return

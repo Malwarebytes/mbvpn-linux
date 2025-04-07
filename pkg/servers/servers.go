@@ -1,10 +1,12 @@
 package servers
 
 import (
+	"math/rand"
 	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 )
@@ -80,12 +82,25 @@ func (s *DefaultServerStorage) GetByServerName(name string) (*remote.Server, err
 	for _, country := range locations.Countries {
 		for _, city := range country.Cities {
 			for _, server := range city.Servers {
-				if server.Hostname == name {
+				shortHost := strings.Split(server.Hostname, ".")[0]
+				if server.Hostname == name || shortHost == name {
 					return &server, nil
 				}
 			}
+			if city.Code == name || city.Name == name {
+				return &city.Servers[randomInt(len(city.Servers))], nil
+			}
+		}
+		if country.Code == name || country.Name == name {
+			randomCity := country.Cities[randomInt(len(country.Cities))]
+			randomServer := randomCity.Servers[randomInt(len(randomCity.Servers))]
+			return &randomServer, nil
 		}
 	}
 
 	return nil, nil
+}
+
+func randomInt(max int) int {
+	return rand.Intn(max)
 }
