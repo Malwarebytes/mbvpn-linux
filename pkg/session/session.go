@@ -64,10 +64,17 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 	// Register device
 	installationToken, err := sm.holocron.RegisterDevice()
 	if err != nil {
+		if config.Debug() {
+			fmt.Println("Cannot register this device.")
+		}
 		log.Panic(err)
+		return
 	}
 	err = sm.cfgProvider.StoreInstallationToken(installationToken)
 	if err != nil {
+    if config.Debug() {
+			fmt.Println("Cannot save installation token")
+		}
 		log.Panic(err)
 		return
 	}
@@ -78,6 +85,7 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 		fmt.Println("Cannot activate this device.")
 		sm.cfgProvider.DeleteConfig()
 		log.Panic(err)
+		return
 	}
 	if m.Status != remote.DeviceStatusLicensed && m.Status != remote.DeviceStatusTrial {
 		fmt.Println("Cannot activate this device. Check your license.")

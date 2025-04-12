@@ -37,20 +37,6 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, 
 }
 
 func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
-	installationToken, err := vpn.cfgProvider.GetInstallationToken()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	m, err := vpn.holocron.CheckDevice(installationToken)
-	if err != nil {
-		log.Panic(err)
-	}
-	if m.Status != remote.DeviceStatusLicensed {
-		fmt.Println("You need to activate your device first. Use `mbvpn login` to activate.")
-		return
-	}
-
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
 		log.Panic(err)
@@ -76,9 +62,6 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 			}
 		}
 	}
-
-	fmt.Println()
-	fmt.Println(`Call "mbvpn up <server>" to connect and "mbvpn down <server>" to disconnect.`)
 }
 
 func (vpn *DefaultVpn) Up(cfg string) {
@@ -101,15 +84,10 @@ func (vpn *DefaultVpn) Up(cfg string) {
 	fmt.Printf("Connecting to %s...\n", cfgName)
 
 	keyData, err := vpn.cfgProvider.Get()
-	if err != nil || keyData.PrivateKey == "" {
+	if err != nil || keyData.PrivateKey == "" || keyData.PublicKey == "" {
 		publicKey, _, privateKey, _ := generateKeys()
 
-		ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, publicKey.String())
-		if err != nil {
-			log.Panic(err)
-		}
-
-		err = vpn.cfgProvider.StoreData(privateKey.String(), ipAddrs.IpV4, ipAddrs.IpV6)
+		err = vpn.cfgProvider.StoreData(publicKey.String(), privateKey.String())
 		if err != nil {
 			log.Panic(err)
 			return
@@ -118,13 +96,19 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		keyData, _ = vpn.cfgProvider.Get()
 	}
 
-	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, keyData.IpV4, keyData.IpV6)
+	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, keyData.PublicKey)
 	if err != nil {
 		log.Panic(err)
 		return
 	}
 
-	//TODO: Check if key is expired
+	//TODO error handling
+
+	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
+	if err != nil {
+		log.Panic(err)
+		return
+	}
 
 	fmt.Printf("Calling `sudo wg-quick up %s`\n", cfgPath)
 	cmd := exec.Command("sudo", "wg-quick", "up", cfgPath)

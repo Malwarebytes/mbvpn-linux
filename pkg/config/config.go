@@ -11,8 +11,7 @@ import (
 type Config struct {
 	InstallationToken string `yaml:"installation_token"`
 	PrivateKey string `yaml:"private_key"`
-	IpV4 string `yaml:"ipv4"`
-	IpV6 string `yaml:"ipv6"`
+	PublicKey string `yaml:"public_key"`
 }
 
 type ConfigProvider interface {
@@ -20,7 +19,7 @@ type ConfigProvider interface {
 	GetInstallationToken() (string, error)
 	DeleteConfig() error
 	Get() (Config, error)
-	StoreData(key string, ipv4 string, ipv6 string) error
+	StoreData(publicKey string, privateKey string) error
 	update(cfg Config) error
 }
 
@@ -87,15 +86,14 @@ func (cp *YamlConfigProvider) update(cfg Config) error {
 	return nil
 }
 
-func (cp *YamlConfigProvider) StoreData(key string, ipv4 string, ipv6 string) error {
+func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) error {
 	cfg, err := cp.Get()
 	if err != nil {
 		return err
 	}
 
-	cfg.PrivateKey = key
-	cfg.IpV4 = ipv4
-	cfg.IpV6 = ipv6
+	cfg.PrivateKey = privateKey
+	cfg.PublicKey = publicKey 
 
 	err = cp.update(cfg)
 	if err != nil {
