@@ -44,7 +44,7 @@ func Execute() {
 
 func init() {
 	cp := config.NewYamlConfigProvider()
-	holocron := remote.NewDefaultHolocron(config.NewEtcFileMachineIdProvider())
+	holocron := remote.NewDefaultHolocron(config.NewConfigFileMachineIdProvider())
 	sm := session.NewDefaultSessionManager(cp, holocron)
 	ss := servers.NewDefaultServerStorage()
 	vpn := vpn.NewDefaultVpn(cp, holocron, ss)

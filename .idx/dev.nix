@@ -11,7 +11,18 @@
     # pkgs.python311Packages.pip
     # pkgs.nodejs_20
     # pkgs.nodePackages.nodemon
+    pkgs.gnumake
+    pkgs.go
+    pkgs.docker
+    pkgs.docker-compose
+    pkgs.wireguard-tools
+    pkgs.wireguard-go
+    pkgs.sudo
   ];
+
+  services.docker = {
+    enable = true;
+  };
 
   # Sets environment variables in the workspace
   env = {};

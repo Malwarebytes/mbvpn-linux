@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/Malwarebytes/mbvpn/pkg/output"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
@@ -16,6 +14,7 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
+import "github.com/Malwarebytes/mbvpn/pkg/console"
 type Vpn interface {
 	Servers(showCities bool, showServers bool)
 	Up(cfg string)
@@ -113,15 +112,13 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		return
 	}
 
-	fmt.Printf("Calling `sudo wg-quick up %s`\n", cfgPath)
-	cmd := exec.Command("sudo", "wg-quick", "up", cfgPath)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Run(); err != nil {
+	fmt.Printf("Calling `wg-quick up %s`\n", cfgPath)
+	_, err = console.RunCmd(true, "wg-quick", "up", cfgPath)
+	if err != nil {
+		fmt.Println("Failed to connect.")
 		log.Panic(err)
-	} else {
+	} else {	
+		
 		fmt.Println("Connected.")
 	}
 }
@@ -144,14 +141,13 @@ func (vpn *DefaultVpn) Down(cfg string) {
 			log.Panic(err)
 			return
 		}
-		cmd := exec.Command("sudo", "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-
-		if err := cmd.Run(); err != nil {
+		_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
+		if err != nil {
+			fmt.Println("Failed to disconnect.")
 			log.Panic(err)
+		
 		} else {
+			
 			fmt.Println("Disconnected.")
 		}
 	}
@@ -239,11 +235,11 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 	return fullPath, nil
 }
 
-func getConnectedServers() ([]string, error) {
-	cmd := exec.Command("sudo", "wg", "show")
-	output, err := cmd.Output()
+func getConnectedServers() ([]string, error) {	
+	output, err := console.RunCmd(true, "wg", "show")
 	if err != nil {
-		return nil, err
+		fmt.Println("Failed to execute `wg show`.")
+		return nil, fmt.Errorf("failed to execute `wg show`: %w", err)
 	}
 
 	lines := strings.Split(string(output), "\n")
