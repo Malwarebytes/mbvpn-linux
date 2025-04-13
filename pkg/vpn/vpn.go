@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/output"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"github.com/Malwarebytes/mbvpn/pkg/servers"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -39,25 +40,27 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, 
 func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
-		log.Panic(err)
+		output.PrintMsg("Failed to get server list.", output.MsgError)
+		output.LogError(fmt.Errorf("failed to get server list: %w", err))
+		return
 	}
 
 	serverStorage := servers.DefaultServerStorage{}
 	err = serverStorage.Save(locations)
 	if err != nil {
-		fmt.Println("Failed to save server list:", err)
+		output.PrintMsg("Failed to save server list.", output.MsgError)
 		return
 	}
 
 	for _, country := range locations.Countries {
-		fmt.Printf("%s, %s\n", country.Name, country.Code)
+		output.PrintMsg(fmt.Sprintf("%s, %s", country.Name, country.Code), output.MsgOutput)
 		for _, city := range country.Cities {
 			if showCities {
-				fmt.Printf("  %s, %s\n", city.Name, city.Code)
+				output.PrintMsg(fmt.Sprintf("  %s, %s", city.Name, city.Code), output.MsgOutput)
 			}
 			for _, s := range city.Servers {
 				if showServers {
-					fmt.Printf("    %s\n", strings.Split(s.Hostname, ".")[0])
+					output.PrintMsg(fmt.Sprintf("    %s", strings.Split(s.Hostname, ".")[0]), output.MsgOutput)
 				}
 			}
 		}
@@ -102,7 +105,7 @@ func (vpn *DefaultVpn) Up(cfg string) {
 		return
 	}
 
-	//TODO error handling
+	// TODO error handling
 
 	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
 	if err != nil {

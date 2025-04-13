@@ -12,6 +12,7 @@ import (
 	"github.com/Malwarebytes/mbvpn/pkg/servers"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("=== Running in debug mode ===")
 		}
 		config.DebugFlag = debug
+		log.SetLevel(log.TraceLevel)
 	},
 }
 
@@ -48,13 +50,13 @@ func init() {
 	vpn := vpn.NewDefaultVpn(cp, holocron, ss)
 
 	rootCmd.AddCommand(NewLoginCommand(sm))
-  rootCmd.AddCommand(NewLogoutCommand(sm))
+	rootCmd.AddCommand(NewLogoutCommand(sm))
 	rootCmd.AddCommand(NewServersCommand(sm, vpn))
 	rootCmd.AddCommand(NewCountriesCommand(sm, vpn))
 	rootCmd.AddCommand(NewCitiesCommand(sm, vpn))
-  rootCmd.AddCommand(NewUpCommand(sm, vpn))
-  rootCmd.AddCommand(NewDownCommand(vpn))
-  rootCmd.AddCommand(NewStatusCommand(vpn))
+	rootCmd.AddCommand(NewUpCommand(sm, vpn))
+	rootCmd.AddCommand(NewDownCommand(vpn))
+	rootCmd.AddCommand(NewStatusCommand(vpn))
 
 	rootCmd.PersistentFlags().Bool("debug", false, "Run command in debug mode.")
 }
