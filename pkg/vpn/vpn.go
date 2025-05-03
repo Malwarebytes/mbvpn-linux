@@ -1,7 +1,6 @@
 package vpn
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -117,8 +116,7 @@ func (vpn *DefaultVpn) Up(cfg string) {
 	if err != nil {
 		fmt.Println("Failed to connect.")
 		log.Panic(err)
-	} else {	
-		
+	} else {
 		fmt.Println("Connected.")
 	}
 }
@@ -145,9 +143,7 @@ func (vpn *DefaultVpn) Down(cfg string) {
 		if err != nil {
 			fmt.Println("Failed to disconnect.")
 			log.Panic(err)
-		
 		} else {
-			
 			fmt.Println("Disconnected.")
 		}
 	}
@@ -199,15 +195,6 @@ func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
 	}
 
 	return publicKey, preSharedKey, privateKey, nil
-}
-
-func intPtr(i int) *int {
-	return &i
-}
-
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	return !errors.Is(err, os.ErrNotExist)
 }
 
 func writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) (string, error) {

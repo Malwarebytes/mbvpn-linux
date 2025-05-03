@@ -1,9 +1,9 @@
 package servers
 
 import (
-	"math/rand"
 	"encoding/json"
-	"log"
+	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +30,7 @@ type DefaultServerStorage struct{}
 func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configDir := filepath.Join(home, ".config", "mbvpn")
@@ -39,7 +39,7 @@ func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
 
 	file, err := os.Create(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file at path '%s': %w", path, err)
 	}
 	defer file.Close()
 
@@ -50,7 +50,7 @@ func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
 func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Panic(err)
+		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configDir := filepath.Join(home, ".config", "mbvpn")
@@ -59,7 +59,7 @@ func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file at path '%s': %w", path, err)
 	}
 	defer file.Close()
 
@@ -67,7 +67,7 @@ func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&locations)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode locations from file: %w", err)
 	}
 
 	return &locations, nil
@@ -76,7 +76,7 @@ func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
 func (s *DefaultServerStorage) GetByServerName(name string) (*remote.Server, error) {
 	locations, err := s.Get()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get locations: %w", err)
 	}
 
 	for _, country := range locations.Countries {

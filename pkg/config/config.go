@@ -34,7 +34,7 @@ func (cp *YamlConfigProvider) StoreInstallationToken(token string) error {
 	cfg.InstallationToken = token
 	err := cp.update(cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to store installation token: %w", err)
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func (cp *YamlConfigProvider) StoreInstallationToken(token string) error {
 func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 	cfg, err := cp.Get()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get installation token: %w", err)
 	}
 
 	return cfg.InstallationToken, nil
@@ -51,14 +51,14 @@ func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 func (cp *YamlConfigProvider) DeleteConfig() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 
 	err = os.Remove(configPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete config file: %w", err)
 	}
 
 	return nil
@@ -67,29 +67,29 @@ func (cp *YamlConfigProvider) DeleteConfig() error {
 func (cp *YamlConfigProvider) update(cfg Config) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 	f, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open config file for writing: %w", err)
 	}
 	defer f.Close()
 
 	encoder := yaml.NewEncoder(f)
 	err = encoder.Encode(cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to encode config data: %w", err)
 	}
-
+	
 	return nil
 }
 
 func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) error {
 	cfg, err := cp.Get()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get existing config: %w", err)
 	}
 
 	cfg.PrivateKey = privateKey
@@ -97,7 +97,7 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 
 	err = cp.update(cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update config with new data: %w", err)
 	}
 
 	return nil
@@ -107,7 +107,7 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 func (cp *YamlConfigProvider) Get() (Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return Config{}, err
+		return Config{}, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
 	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
