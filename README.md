@@ -2,28 +2,30 @@
 
 ## IMPORTANT
 
-The tool is in experimental mode, so it is important to know, what parts of the linux system are affected:
+The tool is in experimental mode, so it is important to know which parts of the Linux system are affected:
 
-- Configuration file in user's config directory for storing session info: `~/.config/mbvpn/config.yml`
-- `login` command creates Wireguard interfaces with `mb-` prefix in `/etc/wireguard/`
-- `logout` command removes the configuration file only and keeps Wireguard interfaces in the file system
+- Configuration files in user's config directory:
+  - Session info: `~/.config/mbvpn/config.yml`
+  - Machine ID: `~/.config/mbvpn/machine-id`
+  - WireGuard configurations: `~/.config/mbvpn/servers/*.conf`
+- `logout` command removes the configuration files but keeps WireGuard interfaces in the system
 
 ## Prerequisites
 
-Install Wireguard tools using your prefered package manager:
+Install WireGuard tools using your preferred package manager:
 - `wg`
 - `wg-quick`
 
 ## Installation
 
 1. Download and unpack the latest release for your architecture from "Releases".
-2. Update the `$PATH` variable to have an access to the unpacked binary.
+2. Update the `$PATH` variable to have access to the unpacked binary.
 
 ## Usage
 
-> You can access help information using `mbvpn --help` or `mbvpn <command> --help` if you want to read details about the specific command.
+> You can access help information using `mbvpn --help` or `mbvpn <command> --help` if you want to read details about specific commands.
 
-First, you should authenticate yourself using `login` command with license key or MB-code:
+First, authenticate yourself using the `login` command with license key or MB-code:
 
 `mbvpn login --code MB-XXXXXX`
 
@@ -31,26 +33,48 @@ or
 
 `mbvpn login --key XXXX-XXXX-XXXX-XXXX`
 
-Load and prepare VPN servers with `servers` command:
+### Managing Servers
 
-`mbvpn servers`
+View available servers and locations:
 
-Use `mbvpn up <server>` and `mbvpn down <server>` to connect/disconnect to/from the server.
+- List all countries: `mbvpn countries`
+- List cities within countries: `mbvpn cities`
+- List all servers: `mbvpn servers`
 
-Use `mbvpn logout` to deactivate license and clean the current session.
+### Connection Management
 
-Use `mbvpn status` to get information about current Wireguard connection.
+Connect to a server:
+`mbvpn connect <server>` (or the shorthand `mbvpn c <server>`)
+
+Disconnect from VPN:
+`mbvpn disconnect` (or the shorthand `mbvpn d`)
+
+Check connection status:
+`mbvpn status`
+
+End your session:
+`mbvpn logout`
+
+## Debug Mode
+
+You can run any command in debug mode to see more detailed logs:
+
+`mbvpn --debug <command>`
 
 ## Troubleshooting
 
-### Loging, logout and license issues
+### Login, logout and license issues
 
-`mbvpn logout` command deactivates devices (makes license seat free) and removes local data for the current session. If you still face issues, delete `~/.config/mbvpn/config.yml` file.
+The `mbvpn logout` command deactivates your device (makes the license seat free) and removes local data for the current session. If you still face issues, delete the following files:
+- `~/.config/mbvpn/config.yml`
+- `~/.config/mbvpn/machine-id`
 
-### Cannot disconnect, lost the internet access
+### Cannot disconnect, lost internet access
 
-Try to use `mbvpn disconnect` without specifiying server. The tool will try to disconnect from the Wireguard connections, those server names start with `mb-`.
+Use `mbvpn disconnect` (without specifying a server). The tool will attempt to disconnect from all WireGuard connections.
 
-If it still doesn't help, use `wg-quick down <server>`.
+If that doesn't help, manually disconnect using WireGuard directly:
+1. Find your connection: `wg show`
+2. Disconnect: `sudo wg-quick down <interface_name>`
 
-> After connecting/disconnecting give the tool a few seconds to establish connection.
+> After connecting/disconnecting, give the tool a few seconds to establish or terminate the connection.
