@@ -37,17 +37,17 @@ build-st: build-st-release
 build-prod: build-prod-release
 
 # Install targets
-install-st-debug: build-st-debug
-	go install .
+install-st-debug: 
+	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
 
-install-st-release: build-st-release
-	go install .
+install-st-release: 
+	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
 
-install-prod-debug: build-prod-debug
-	go install .
+install-prod-debug: 
+	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
 
-install-prod-release: build-prod-release
-	go install .
+install-prod-release: 
+	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
 
 # Default install targets
 install-st: install-st-release
