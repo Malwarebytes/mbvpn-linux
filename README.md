@@ -80,11 +80,68 @@ Check connection status:
 End your session:
 `mbvpn logout`
 
-## Debug Mode
+## Debug Mode and Logging
 
-You can run any command in debug mode to see more detailed logs:
+MBVPN provides several options for controlling logging and debugging output:
 
-`mbvpn --debug <command>`
+### Debug and Trace Flags
+
+MBVPN provides two levels of enhanced logging:
+
+#### Debug Mode
+
+Run any command in debug mode to see detailed logs:
+
+```bash
+mbvpn --debug <command>
+```
+
+The `--debug` flag enables:
+- Detailed error messages with stack traces
+- More verbose logging of operations
+- Display of underlying API calls and responses
+- WireGuard configuration details
+
+#### Trace Mode
+
+For maximum verbosity, use trace mode which includes full HTTP request/response details:
+
+```bash
+mbvpn --trace <command>
+```
+
+The `--trace` flag enables:
+- All debug mode features
+- Complete HTTP request and response dumps
+- Headers and payload contents of API communications
+- Detailed internal operation tracing
+- Useful for diagnosing connectivity issues or inspecting API behavior
+
+### Debug Builds
+
+Debug builds (created with `make build-*-debug` commands) provide enhanced debugging capabilities:
+- Additional diagnostic information
+- More comprehensive logging of operations
+- Better visibility into system interactions
+
+For troubleshooting complex issues, use debug builds with the debug flag:
+```bash
+# Build a debug version first
+make build-prod-debug
+
+# Run with debug flag
+mbvpn --debug <command>
+```
+
+### Log Levels
+
+Debug logs are handled by the logrus library with the following behavior:
+- By default, only INFO level and above logs are shown (warnings, errors)
+- When using the `--debug` flag, DEBUG level logs are enabled, showing detailed operation information
+- When using the `--trace` flag, TRACE level logs are enabled, showing complete HTTP request/response details
+- HTTP requests, API responses, and internal operations are logged at DEBUG level
+- Network traces (full request/response details) are logged at TRACE level
+- Error details are always logged but only displayed to users in debug or trace mode
 
 ## Troubleshooting
 

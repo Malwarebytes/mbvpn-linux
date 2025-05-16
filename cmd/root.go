@@ -14,6 +14,7 @@ import (
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
+	log "github.com/sirupsen/logrus"
 )
 
 // ErrorHandler is the central error handler for all commands
@@ -30,10 +31,23 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		debug, _ := cmd.Flags().GetBool("debug")
-		if debug {
+		trace, _ := cmd.Flags().GetBool("trace")
+
+		// Set log level based on flags
+		switch {
+		case trace:
+			fmt.Println("=== Running in trace mode ===")
+			log.SetLevel(log.TraceLevel)
+			config.DebugFlag = true // Trace mode implies debug mode
+		case debug:
 			fmt.Println("=== Running in debug mode ===")
+			log.SetLevel(log.DebugLevel)
+			config.DebugFlag = true
+		default:
+			// Set default log level to info
+			log.SetLevel(log.InfoLevel)
+			config.DebugFlag = false
 		}
-		config.DebugFlag = debug
 		
 		// Initialize error handler with current debug setting
 		ErrorHandler = errors.NewHandler()
@@ -65,6 +79,7 @@ func init() {
 	rootCmd.AddCommand(NewVersionCommand())
 
 	rootCmd.PersistentFlags().Bool("debug", false, "Run command in debug mode.")
+	rootCmd.PersistentFlags().Bool("trace", false, "Run command in trace mode with full request/response logging.")
 }
 
 // HandleError processes errors according to their type and debug mode
