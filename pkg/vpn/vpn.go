@@ -50,19 +50,173 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 	}
 
 	for _, country := range locations.Countries {
-		output.PrintMsg(fmt.Sprintf("%s, %s", country.Name, country.Code), output.MsgOutput)
-		for _, city := range country.Cities {
+		countryFlag := getCountryFlag(country.Code)
+		output.PrintMsg(fmt.Sprintf("%s %s, %s", countryFlag, country.Name, country.Code), output.MsgOutput)
+		
+		for i, city := range country.Cities {
 			if showCities {
-				output.PrintMsg(fmt.Sprintf("  %s, %s", city.Name, city.Code), output.MsgOutput)
-			}
-			for _, s := range city.Servers {
+				isLastCity := i == len(country.Cities)-1
+				cityPrefix := "└─"
+				if !isLastCity {
+					cityPrefix = "├─"
+				}
+				output.PrintMsg(fmt.Sprintf("  %s %s, %s", cityPrefix, city.Name, city.Code), output.MsgOutput)
+				
 				if showServers {
-					output.PrintMsg(fmt.Sprintf("    %s", strings.Split(s.Hostname, ".")[0]), output.MsgOutput)
+					for j, s := range city.Servers {
+						isLastServer := j == len(city.Servers)-1
+						serverPrefix := "└─"
+						if !isLastServer {
+							serverPrefix = "├─"
+						}
+						output.PrintMsg(fmt.Sprintf("     %s %s", serverPrefix, strings.Split(s.Hostname, ".")[0]), output.MsgOutput)
+					}
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// getCountryFlag returns the flag emoji for a given country code
+func getCountryFlag(countryCode string) string {
+	// Convert country code to uppercase to ensure consistent handling
+	countryCode = strings.ToUpper(countryCode)
+	
+	// Map of country codes to flag emojis
+	countryFlags := map[string]string{
+		"AF": "🇦🇫", // Afghanistan
+		"AL": "🇦🇱", // Albania
+		"DZ": "🇩🇿", // Algeria
+		"AR": "🇦🇷", // Argentina
+		"AM": "🇦🇲", // Armenia
+		"AU": "🇦🇺", // Australia
+		"AT": "🇦🇹", // Austria
+		"AZ": "🇦🇿", // Azerbaijan
+		"BH": "🇧🇭", // Bahrain
+		"BD": "🇧🇩", // Bangladesh
+		"BY": "🇧🇾", // Belarus
+		"BE": "🇧🇪", // Belgium
+		"BO": "🇧🇴", // Bolivia
+		"BA": "🇧🇦", // Bosnia and Herzegovina
+		"BR": "🇧🇷", // Brazil
+		"KH": "🇰🇭", // Cambodia
+		"CA": "🇨🇦", // Canada
+		"CL": "🇨🇱", // Chile
+		"CN": "🇨🇳", // China
+		"CO": "🇨🇴", // Colombia
+		"CR": "🇨🇷", // Costa Rica
+		"HR": "🇭🇷", // Croatia
+		"CU": "🇨🇺", // Cuba
+		"CY": "🇨🇾", // Cyprus
+		"CZ": "🇨🇿", // Czech Republic
+		"DK": "🇩🇰", // Denmark
+		"DO": "🇩🇴", // Dominican Republic
+		"EC": "🇪🇨", // Ecuador
+		"EG": "🇪🇬", // Egypt
+		"SV": "🇸🇻", // El Salvador
+		"EE": "🇪🇪", // Estonia
+		"FI": "🇫🇮", // Finland
+		"FR": "🇫🇷", // France
+		"GE": "🇬🇪", // Georgia
+		"DE": "🇩🇪", // Germany
+		"GH": "🇬🇭", // Ghana
+		"GB": "🇬🇧", // Great Britain (United Kingdom)
+		"GR": "🇬🇷", // Greece
+		"GT": "🇬🇹", // Guatemala
+		"HK": "🇭🇰", // Hong Kong
+		"HN": "🇭🇳", // Honduras
+		"HU": "🇭🇺", // Hungary
+		"IS": "🇮🇸", // Iceland
+		"IN": "🇮🇳", // India
+		"ID": "🇮🇩", // Indonesia
+		"IR": "🇮🇷", // Iran
+		"IQ": "🇮🇶", // Iraq
+		"IE": "🇮🇪", // Ireland
+		"IL": "🇮🇱", // Israel
+		"IT": "🇮🇹", // Italy
+		"JM": "🇯🇲", // Jamaica
+		"JP": "🇯🇵", // Japan
+		"JO": "🇯🇴", // Jordan
+		"KZ": "🇰🇿", // Kazakhstan
+		"KE": "🇰🇪", // Kenya
+		"KR": "🇰🇷", // Korea, South
+		"KW": "🇰🇼", // Kuwait
+		"LV": "🇱🇻", // Latvia
+		"LB": "🇱🇧", // Lebanon
+		"LY": "🇱🇾", // Libya
+		"LT": "🇱🇹", // Lithuania
+		"LU": "🇱🇺", // Luxembourg
+		"MK": "🇲🇰", // North Macedonia
+		"MY": "🇲🇾", // Malaysia
+		"MT": "🇲🇹", // Malta
+		"MX": "🇲🇽", // Mexico
+		"MD": "🇲🇩", // Moldova
+		"MN": "🇲🇳", // Mongolia
+		"ME": "🇲🇪", // Montenegro
+		"MA": "🇲🇦", // Morocco
+		"MM": "🇲🇲", // Myanmar
+		"NP": "🇳🇵", // Nepal
+		"NL": "🇳🇱", // Netherlands
+		"NZ": "🇳🇿", // New Zealand
+		"NI": "🇳🇮", // Nicaragua
+		"NG": "🇳🇬", // Nigeria
+		"NO": "🇳🇴", // Norway
+		"OM": "🇴🇲", // Oman
+		"PK": "🇵🇰", // Pakistan
+		"PA": "🇵🇦", // Panama
+		"PY": "🇵🇾", // Paraguay
+		"PE": "🇵🇪", // Peru
+		"PH": "🇵🇭", // Philippines
+		"PL": "🇵🇱", // Poland
+		"PT": "🇵🇹", // Portugal
+		"PR": "🇵🇷", // Puerto Rico
+		"QA": "🇶🇦", // Qatar
+		"RO": "🇷🇴", // Romania
+		"RU": "🇷🇺", // Russia
+		"SA": "🇸🇦", // Saudi Arabia
+		"RS": "🇷🇸", // Serbia
+		"SG": "🇸🇬", // Singapore
+		"SK": "🇸🇰", // Slovakia
+		"SI": "🇸🇮", // Slovenia
+		"ZA": "🇿🇦", // South Africa
+		"ES": "🇪🇸", // Spain
+		"LK": "🇱🇰", // Sri Lanka
+		"SD": "🇸🇩", // Sudan
+		"SE": "🇸🇪", // Sweden
+		"CH": "🇨🇭", // Switzerland
+		"SY": "🇸🇾", // Syria
+		"TW": "🇹🇼", // Taiwan
+		"TJ": "🇹🇯", // Tajikistan
+		"TH": "🇹🇭", // Thailand
+		"TN": "🇹🇳", // Tunisia
+		"TR": "🇹🇷", // Turkey
+		"TM": "🇹🇲", // Turkmenistan
+		"UA": "🇺🇦", // Ukraine
+		"AE": "🇦🇪", // United Arab Emirates
+		"US": "🇺🇸", // United States
+		"UY": "🇺🇾", // Uruguay
+		"UZ": "🇺🇿", // Uzbekistan
+		"VE": "🇻🇪", // Venezuela
+		"VN": "🇻🇳", // Vietnam
+	}
+	
+	// Return the flag emoji if it exists in the map, otherwise return the country code
+	if flag, ok := countryFlags[countryCode]; ok {
+		return flag
+	}
+	
+	// If no flag is found, create a Unicode flag from the country code
+	// This uses the Regional Indicator Symbol Letters which create flags when paired
+	// Each letter A-Z is represented by a Unicode code point from U+1F1E6 to U+1F1FF
+	if len(countryCode) == 2 {
+		// Convert each letter to its regional indicator symbol
+		first := 127462 + int(countryCode[0]) - 'A' // 127462 is the Unicode point for 🇦 (Regional Indicator A)
+		second := 127462 + int(countryCode[1]) - 'A'
+		return string(rune(first)) + string(rune(second))
+	}
+	
+	return "🌍" // Default earth globe if conversion isn't possible
 }
 
 func (vpn *DefaultVpn) Up(cfg string) error {
