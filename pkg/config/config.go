@@ -23,10 +23,22 @@ type ConfigProvider interface {
 	update(cfg Config) error
 }
 
-type YamlConfigProvider struct{}
+type YamlConfigProvider struct{
+	// For testing purposes
+	homeDir string
+}
 
 func NewYamlConfigProvider() ConfigProvider {
 	return &YamlConfigProvider{}
+}
+
+// GetUserHomeDir returns the user's home directory
+// This is extracted to a method to make it testable
+func (cp *YamlConfigProvider) GetUserHomeDir() (string, error) {
+	if cp.homeDir != "" {
+		return cp.homeDir, nil
+	}
+	return os.UserHomeDir()
 }
 
 func (cp *YamlConfigProvider) StoreInstallationToken(token string) error {
@@ -49,7 +61,7 @@ func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 }
 
 func (cp *YamlConfigProvider) DeleteConfig() error {
-	home, err := os.UserHomeDir()
+	home, err := cp.GetUserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
@@ -65,7 +77,7 @@ func (cp *YamlConfigProvider) DeleteConfig() error {
 }
 
 func (cp *YamlConfigProvider) update(cfg Config) error {
-	home, err := os.UserHomeDir()
+	home, err := cp.GetUserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
@@ -105,7 +117,7 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 
 
 func (cp *YamlConfigProvider) Get() (Config, error) {
-	home, err := os.UserHomeDir()
+	home, err := cp.GetUserHomeDir()
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to get user home directory: %w", err)
 	}

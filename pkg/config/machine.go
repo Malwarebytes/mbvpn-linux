@@ -10,26 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// For testing purposes
+var userCurrentFunc = user.Current
+
 type MachineIdProvider interface {
 	Get() (string, error)
-}
-
-type EtcFileMachineIdProvider struct{}
-
-func NewEtcFileMachineIdProvider() MachineIdProvider {
-	return &EtcFileMachineIdProvider{}
-}
-
-func (cp *EtcFileMachineIdProvider) Get() (string, error) {
-	data, err := os.ReadFile("/etc/machine-id")
-	if err != nil {
-		return "", err
-	}
-
-	id := string(data)
-	id = strings.TrimSuffix(id, "\n")
-
-	return id, nil
 }
 
 type ConfigFileMachineIdProvider struct{}
@@ -39,7 +24,7 @@ func NewConfigFileMachineIdProvider() MachineIdProvider {
 }
 
 func (cp *ConfigFileMachineIdProvider) Get() (string, error) {
-	usr, err := user.Current()
+	usr, err := userCurrentFunc()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
