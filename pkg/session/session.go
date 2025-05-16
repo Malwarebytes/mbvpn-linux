@@ -36,7 +36,6 @@ func (sm *DefaultSessionManager) LoginWithKey(key string) error {
 	formattedKey := strings.ToUpper(key)
 
 	if len(formattedKey) != 23 {
-		output.PrintMsg("Invalid license key. License key should be 23 characters long.", output.MsgError)
 		return errors.NewUserError("Invalid license key. License key should be 23 characters long.", errors.ErrInvalidInput)
 	}
 
@@ -48,7 +47,6 @@ func (sm *DefaultSessionManager) LoginWithCode(code string) error {
 	formattedCode = strings.TrimPrefix(formattedCode, "MB-")
 
 	if len(formattedCode) != 6 {
-		output.PrintMsg("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.", output.MsgError)
 		return errors.NewUserError("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.", errors.ErrInvalidInput)
 	}
 
@@ -58,7 +56,6 @@ func (sm *DefaultSessionManager) LoginWithCode(code string) error {
 func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 	// Check current session
 	if sm.Active() {
-		output.PrintMsg("There is an active session on your device. Try logout command first if you want to re-login.", output.MsgOutput)
 		return errors.NewUserError("There is an active session on your device. Try logout command first if you want to re-login.", nil)
 	}
 
@@ -80,14 +77,12 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 	// Activate device
 	m, err := sm.holocron.ActivateDevice(installationToken, token, mbcode)
 	if err != nil {
-		output.PrintMsg("Cannot activate this device.", output.MsgError)
 		sm.cfgProvider.DeleteConfig()
 		log.Errorf("Error activating the device: %v", err)
 		return errors.NewNetworkError("activate device", err)
 	}
 	
 	if m.Status != remote.DeviceStatusLicensed && m.Status != remote.DeviceStatusTrial {
-		output.PrintMsg("Cannot activate this device. Check your license.", output.MsgError)
 		_ = sm.cfgProvider.DeleteConfig()
 		err := fmt.Errorf("device status: %s", m.Status)
 		return errors.NewAuthError("check license status", err)
@@ -110,7 +105,6 @@ func (sm *DefaultSessionManager) Logout() error {
 
 	err = sm.cfgProvider.DeleteConfig()
 	if err != nil {
-		output.PrintMsg("There is no active session on your device.", output.MsgError)
 		return errors.NewUserError("There is no active session on your device.", err)
 	}
 

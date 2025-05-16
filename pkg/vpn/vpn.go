@@ -40,14 +40,12 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, 
 func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
-		output.PrintMsg("Failed to get server list.", output.MsgError)
 		return errors.NewNetworkError("get server list", err)
 	}
 
 	serverStorage := servers.DefaultServerStorage{}
 	err = serverStorage.Save(locations)
 	if err != nil {
-		output.PrintMsg("Failed to save server list.", output.MsgError)
 		return errors.NewConfigError("save server list", err)
 	}
 
@@ -79,7 +77,6 @@ func (vpn *DefaultVpn) Up(cfg string) error {
 	}
 	
 	if server == nil {
-		output.PrintMsg(fmt.Sprintf("Server %s not found.", cfg), output.MsgError)
 		return errors.NewUserError(fmt.Sprintf("Server %s not found", cfg), errors.ErrNotFound)
 	}
 
@@ -119,7 +116,6 @@ func (vpn *DefaultVpn) Up(cfg string) error {
 	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
 	_, err = console.RunCmd(true, "wg-quick", "up", cfgPath)
 	if err != nil {
-		output.PrintMsg("Failed to connect.", output.MsgError)
 		return errors.NewVPNError("connect", err)
 	}
 	
@@ -153,7 +149,6 @@ func (vpn *DefaultVpn) Down(cfg string) error {
 	
 	_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
 	if err != nil {
-		output.PrintMsg("Failed to disconnect.", output.MsgError)
 		return errors.NewVPNError("disconnect", err)
 	}
 	
@@ -177,7 +172,6 @@ func (vpn *DefaultVpn) Status() error {
 
 	network, err := vpn.holocron.GetVpnNetworkDetails()
 	if err != nil {
-		output.PrintMsg("Failed to get network details.", output.MsgError)
 		return errors.NewNetworkError("get network details", err)
 	}
 
