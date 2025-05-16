@@ -65,6 +65,19 @@ install-prod: install-prod-release
 
 install: install-prod
 
+# Test targets
+test:
+	go test ./...
+
+test-unit:
+	go test -v ./pkg/... ./cmd/...
+
+test-integration: build-st-release
+	go test -tags=integration -v ./test/integration/...
+
+test-e2e: build-st-release
+	go test -tags=e2e -v ./test/e2e/...
+
 clean:
 	go clean
 

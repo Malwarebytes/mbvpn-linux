@@ -103,6 +103,6 @@ The codebase follows a modular architecture with clear separation of concerns:
 - `MBVPN_HOLOCRON_URL_ST` - Staging environment API URL (set in .env file)
 - `MBVPN_HOLOCRON_URL_PROD` - Production environment API URL (set in .env file)
 
-## Memories
+## Commit messages
 
 - Do not add information about Claude Code to commit messages.
