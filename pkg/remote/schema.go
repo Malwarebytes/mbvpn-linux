@@ -40,11 +40,11 @@ type RegisterDeviceInput struct {
 }
 
 type CheckDeviceInput struct {
-	Modules          []ProductModule  `json:"modules"`
+	Modules []ProductModule `json:"modules"`
 }
 
 type CheckDeviceResponseData struct {
-  CheckDevice DeviceOutput `json:"checkDevice"`
+	CheckDevice DeviceOutput `json:"checkDevice"`
 }
 
 type ActivateDeviceInput struct {
@@ -56,7 +56,7 @@ type ActivateDeviceInput struct {
 }
 
 type HolocronResponse[D any] struct {
-  Data D `json:"data"`
+	Data D `json:"data"`
 }
 
 type ActivateDeviceResponseData struct {
