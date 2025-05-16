@@ -15,13 +15,18 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 		Long: `Uses provided creadentials to perform activation for this device.
    The command claimes available seat of your Malwarebytes license.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+			
 			key, _ := cmd.Flags().GetString("licenseKey")
 			if key == "" {
 				code, _ := cmd.Flags().GetString("mbCode")
-				sm.LoginWithCode(code)
+				err = sm.LoginWithCode(code)
 			} else {
-				sm.LoginWithKey(key)
+				err = sm.LoginWithKey(key)
 			}
+			
+			// Handle any errors that might have occurred
+			HandleError(err)
 		},
 	}
 

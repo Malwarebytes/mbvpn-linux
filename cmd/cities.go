@@ -5,8 +5,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/Malwarebytes/mbvpn/pkg/errors"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
 	"github.com/spf13/cobra"
@@ -24,9 +23,11 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if sm.Active() {
-				vpn.Servers(true, false)
+				err := vpn.Servers(true, false)
+				HandleError(err)
 			} else {
-				fmt.Println(`There is no active session on your device. Try "login" command first.`)
+				err := errors.NewUserError("There is no active session on your device. Try 'login' command first.", errors.ErrUnauthorized)
+				HandleError(err)
 			}
 		},
 	}

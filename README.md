@@ -21,6 +21,31 @@ Install WireGuard tools using your preferred package manager:
 1. Download and unpack the latest release for your architecture from "Releases".
 2. Update the `$PATH` variable to have access to the unpacked binary.
 
+## Build Configuration
+
+MBVPN can be built with different configurations using the following matrix:
+
+| Environment | Build Type | Command               | Use Case                                          |
+|-------------|------------|----------------------|--------------------------------------------------|
+| Staging     | Debug      | `make build-st-debug`  | Development and testing against staging           |
+| Staging     | Release    | `make build-st-release`| Pre-production testing against staging            |
+| Production  | Debug      | `make build-prod-debug`| Troubleshooting against production               |
+| Production  | Release    | `make build-prod-release`| Final production builds                          |
+
+Default commands:
+- `make build-st`: Creates a staging release build
+- `make build-prod`: Creates a production release build
+
+### Build Types
+
+- **Debug builds**: Include additional debugging symbols and provide more detailed logs
+- **Release builds**: Optimized builds with minimal debug information
+
+You can check your build configuration with the command:
+```
+mbvpn version
+```
+
 ## Usage
 
 > You can access help information using `mbvpn --help` or `mbvpn <command> --help` if you want to read details about specific commands.

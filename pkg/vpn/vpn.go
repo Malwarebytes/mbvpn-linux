@@ -2,23 +2,25 @@ package vpn
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
 	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/console"
+	"github.com/Malwarebytes/mbvpn/pkg/errors"
 	"github.com/Malwarebytes/mbvpn/pkg/output"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"github.com/Malwarebytes/mbvpn/pkg/servers"
+	log "github.com/sirupsen/logrus"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-import "github.com/Malwarebytes/mbvpn/pkg/console"
 type Vpn interface {
-	Servers(showCities bool, showServers bool)
-	Up(cfg string)
-	Down(cfg string)
-	Status()
+	Servers(showCities bool, showServers bool) error
+	Up(cfg string) error
+	Down(cfg string) error
+	Status() error
 }
 
 type DefaultVpn struct {
@@ -35,19 +37,18 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, 
 	}
 }
 
-func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
+func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 	locations, err := vpn.holocron.GetVpnLocations()
 	if err != nil {
 		output.PrintMsg("Failed to get server list.", output.MsgError)
-		output.LogError(fmt.Errorf("failed to get server list: %w", err))
-		return
+		return errors.NewNetworkError("get server list", err)
 	}
 
 	serverStorage := servers.DefaultServerStorage{}
 	err = serverStorage.Save(locations)
 	if err != nil {
 		output.PrintMsg("Failed to save server list.", output.MsgError)
-		return
+		return errors.NewConfigError("save server list", err)
 	}
 
 	for _, country := range locations.Countries {
@@ -63,126 +64,135 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) {
 			}
 		}
 	}
+	return nil
 }
 
-func (vpn *DefaultVpn) Up(cfg string) {
+func (vpn *DefaultVpn) Up(cfg string) error {
 	installationToken, err := vpn.cfgProvider.GetInstallationToken()
 	if err != nil {
-		log.Panic(err)
+		return errors.NewConfigError("get installation token", err)
 	}
 
 	server, err := vpn.serverStorage.GetByServerName(cfg)
 	if err != nil {
-		log.Panic(err)
+		return errors.NewConfigError("get server by name", err)
 	}
+	
 	if server == nil {
-		fmt.Printf("Server %s not found.\n", cfg)
-		return
+		output.PrintMsg(fmt.Sprintf("Server %s not found.", cfg), output.MsgError)
+		return errors.NewUserError(fmt.Sprintf("Server %s not found", cfg), errors.ErrNotFound)
 	}
 
 	cfgName := strings.Split(server.Hostname, ".")[0]
 
-	fmt.Printf("Connecting to %s...\n", cfgName)
+	output.PrintMsg(fmt.Sprintf("Connecting to %s...", cfgName), output.MsgOutput)
 
 	keyData, err := vpn.cfgProvider.Get()
 	if err != nil || keyData.PrivateKey == "" || keyData.PublicKey == "" {
-		publicKey, _, privateKey, _ := generateKeys()
+		// Generate new keys if none exist or there was an error
+		publicKey, _, privateKey, keyErr := generateKeys()
+		if keyErr != nil {
+			return errors.NewVPNError("generate keys", keyErr)
+		}
 
 		err = vpn.cfgProvider.StoreData(publicKey.String(), privateKey.String())
 		if err != nil {
-			log.Panic(err)
-			return
+			return errors.NewConfigError("store keys", err)
 		}
 
-		keyData, _ = vpn.cfgProvider.Get()
+		keyData, err = vpn.cfgProvider.Get()
+		if err != nil {
+			return errors.NewConfigError("get updated config", err)
+		}
 	}
 
 	ipAddrs, err := vpn.holocron.VpnRegisterPublicKey(installationToken, keyData.PublicKey)
 	if err != nil {
-		log.Panic(err)
-		return
+		return errors.NewNetworkError("register public key", err)
 	}
-
-	// TODO error handling
 
 	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
 	if err != nil {
-		log.Panic(err)
-		return
+		return errors.NewVPNError("write config", err)
 	}
 
-	fmt.Printf("Calling `wg-quick up %s`\n", cfgPath)
+	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
 	_, err = console.RunCmd(true, "wg-quick", "up", cfgPath)
 	if err != nil {
-		fmt.Println("Failed to connect.")
-		log.Panic(err)
-	} else {
-		fmt.Println("Connected.")
+		output.PrintMsg("Failed to connect.", output.MsgError)
+		return errors.NewVPNError("connect", err)
 	}
+	
+	output.PrintMsg("Connected.", output.MsgSuccess)
+	return nil
 }
 
-func (vpn *DefaultVpn) Down(cfg string) {
+func (vpn *DefaultVpn) Down(cfg string) error {
 	if cfg == "" {
 		servers, err := getConnectedServers()
 		if err != nil {
-			log.Panic(err)
-		} else {
-			for _, s := range servers {
-				vpn.Down(s)
+			return errors.NewVPNError("get connected servers", err)
+		}
+		
+		for _, s := range servers {
+			err := vpn.Down(s)
+			if err != nil {
+				// Continue trying to disconnect other servers even if one fails
+				log.Errorf("Failed to disconnect from %s: %v", s, err)
 			}
 		}
-	} else {
-		fmt.Printf("Disconnecting from %s...\n", cfg)
+		return nil
+	} 
+	
+	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", cfg), output.MsgOutput)
 
-		cfgDir, err := ensureConfigDir()
-		if err != nil {
-			log.Panic(err)
-			return
-		}
-		_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
-		if err != nil {
-			fmt.Println("Failed to disconnect.")
-			log.Panic(err)
-		} else {
-			fmt.Println("Disconnected.")
-		}
+	cfgDir, err := ensureConfigDir()
+	if err != nil {
+		return errors.NewConfigError("ensure config directory", err)
 	}
+	
+	_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
+	if err != nil {
+		output.PrintMsg("Failed to disconnect.", output.MsgError)
+		return errors.NewVPNError("disconnect", err)
+	}
+	
+	output.PrintMsg("Disconnected.", output.MsgSuccess)
+	return nil
 }
 
-func (vpn *DefaultVpn) Status() {
+func (vpn *DefaultVpn) Status() error {
 	servers, err := getConnectedServers()
 	if err != nil {
-		log.Panic(err)
-		return
+		return errors.NewVPNError("get status", err)
 	}
 
 	if len(servers) == 0 {
-		fmt.Println("No active connections.")
+		output.PrintMsg("No active connections.", output.MsgOutput)
 	} else {
 		for _, s := range servers {
-			fmt.Printf("Connected to: %s\n", s)
+			output.PrintMsg(fmt.Sprintf("Connected to: %s", s), output.MsgSuccess)
 		}
 	}
 
 	network, err := vpn.holocron.GetVpnNetworkDetails()
 	if err != nil {
-		fmt.Println("Failed to get network details.")
-		if config.Debug() {
-			log.Panic(err)
-		}
-		return
+		output.PrintMsg("Failed to get network details.", output.MsgError)
+		return errors.NewNetworkError("get network details", err)
 	}
 
-	fmt.Printf("IP Address: %s\n", network.Ip)
-	fmt.Printf("VPN enabled: %t\n", network.VpnEnabled)
-	fmt.Printf("Country: %s\n", network.Geo.Country)
-	fmt.Printf("City: %s\n", network.Geo.City)
+	output.PrintMsg(fmt.Sprintf("IP Address: %s", network.Ip), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("VPN enabled: %t", network.VpnEnabled), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("Country: %s", network.Geo.Country), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("City: %s", network.Geo.City), output.MsgOutput)
+	
+	return nil
 }
 
 func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		panic(err)
+		return wgtypes.Key{}, wgtypes.Key{}, wgtypes.Key{}, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	// Get the corresponding public key
@@ -191,7 +201,7 @@ func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
 	// Generate a pre-shared key if needed
 	preSharedKey, err := wgtypes.GenerateKey()
 	if err != nil {
-		panic(err)
+		return wgtypes.Key{}, wgtypes.Key{}, wgtypes.Key{}, fmt.Errorf("failed to generate pre-shared key: %w", err)
 	}
 
 	return publicKey, preSharedKey, privateKey, nil
@@ -215,8 +225,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 
 	fullPath, err := saveWgConfig(cfgName, content)
 	if err != nil {
-		fmt.Println("Failed to save config file:", err)
-		return "", err
+		return "", fmt.Errorf("failed to save config file: %w", err)
 	}
 
 	return fullPath, nil
@@ -225,8 +234,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 func getConnectedServers() ([]string, error) {	
 	output, err := console.RunCmd(true, "wg", "show")
 	if err != nil {
-		fmt.Println("Failed to execute `wg show`.")
-		return nil, fmt.Errorf("failed to execute `wg show`: %w", err)
+		return nil, fmt.Errorf("failed to execute 'wg show': %w", err)
 	}
 
 	lines := strings.Split(string(output), "\n")

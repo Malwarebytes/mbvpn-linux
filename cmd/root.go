@@ -8,13 +8,16 @@ import (
 	"os"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/errors"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 	"github.com/Malwarebytes/mbvpn/pkg/servers"
 	"github.com/Malwarebytes/mbvpn/pkg/session"
 	"github.com/Malwarebytes/mbvpn/pkg/vpn"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+// ErrorHandler is the central error handler for all commands
+var ErrorHandler *errors.Handler
 
 var rootCmd = &cobra.Command{
 	Use:   "mbvpn",
@@ -31,7 +34,9 @@ to quickly create a Cobra application.`,
 			fmt.Println("=== Running in debug mode ===")
 		}
 		config.DebugFlag = debug
-		log.SetLevel(log.TraceLevel)
+		
+		// Initialize error handler with current debug setting
+		ErrorHandler = errors.NewHandler()
 	},
 }
 
@@ -57,6 +62,24 @@ func init() {
 	rootCmd.AddCommand(NewUpCommand(sm, vpn))
 	rootCmd.AddCommand(NewDownCommand(vpn))
 	rootCmd.AddCommand(NewStatusCommand(vpn))
+	rootCmd.AddCommand(NewVersionCommand())
 
 	rootCmd.PersistentFlags().Bool("debug", false, "Run command in debug mode.")
+}
+
+// HandleError processes errors according to their type and debug mode
+func HandleError(err error) {
+	if err == nil {
+		return
+	}
+	
+	if ErrorHandler == nil {
+		// Fallback if handler isn't initialized
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	
+	if ErrorHandler.Handle(err) {
+		os.Exit(1)
+	}
 }

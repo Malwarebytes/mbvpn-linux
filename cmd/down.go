@@ -15,11 +15,13 @@ func NewDownCommand(vpn vpn.Vpn) *cobra.Command {
 		Short: "Stops the VPN connection.",
 		Long: `Stops the VPN connection.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// server := ""
-			// if len(args) > 0 {
-				// server = args[0]
-			// }
-			vpn.Down("")
+			server := ""
+			if len(args) > 0 {
+				server = args[0]
+			}
+			
+			err := vpn.Down(server)
+			HandleError(err)
 		},
 	}
 }

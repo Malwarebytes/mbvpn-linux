@@ -3,18 +3,20 @@ package session
 import (
 	"fmt"
 	"strings"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn/pkg/errors"
 	"github.com/Malwarebytes/mbvpn/pkg/output"
 	"github.com/Malwarebytes/mbvpn/pkg/remote"
 )
 
 type SessionManager interface {
-	LoginWithKey(string)
-	LoginWithCode(string)
-	login(string, bool)
-	Logout()
+	LoginWithKey(string) error
+	LoginWithCode(string) error
+	login(string, bool) error
+	Logout() error
 	Active() bool
 }
 
@@ -30,34 +32,34 @@ func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote
 	}
 }
 
-func (sm *DefaultSessionManager) LoginWithKey(key string) {
+func (sm *DefaultSessionManager) LoginWithKey(key string) error {
 	formattedKey := strings.ToUpper(key)
 
 	if len(formattedKey) != 23 {
 		output.PrintMsg("Invalid license key. License key should be 23 characters long.", output.MsgError)
-		return
+		return errors.NewUserError("Invalid license key. License key should be 23 characters long.", errors.ErrInvalidInput)
 	}
 
-	sm.login(formattedKey, false)
+	return sm.login(formattedKey, false)
 }
 
-func (sm *DefaultSessionManager) LoginWithCode(code string) {
+func (sm *DefaultSessionManager) LoginWithCode(code string) error {
 	formattedCode := strings.ToUpper(code)
 	formattedCode = strings.TrimPrefix(formattedCode, "MB-")
 
 	if len(formattedCode) != 6 {
 		output.PrintMsg("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.", output.MsgError)
-		return
+		return errors.NewUserError("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.", errors.ErrInvalidInput)
 	}
 
-	sm.login(formattedCode, true)
+	return sm.login(formattedCode, true)
 }
 
-func (sm *DefaultSessionManager) login(token string, mbcode bool) {
+func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 	// Check current session
 	if sm.Active() {
 		output.PrintMsg("There is an active session on your device. Try logout command first if you want to re-login.", output.MsgOutput)
-		return
+		return errors.NewUserError("There is an active session on your device. Try logout command first if you want to re-login.", nil)
 	}
 
 	output.PrintMsg("Welcome to Malwarebytes VPN client!", output.MsgOutput)
@@ -66,14 +68,13 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 	installationToken, err := sm.holocron.RegisterDevice()
 	if err != nil {
 		log.Errorf("Error registering the device: %v", err)
-		return
+		return errors.NewNetworkError("register device", err)
 	}
+	
 	err = sm.cfgProvider.StoreInstallationToken(installationToken)
 	if err != nil {
-		if config.Debug() {
-			log.Errorf("Error storing installation token: %v", err)
-		}
-		return
+		log.Errorf("Error storing installation token: %v", err)
+		return errors.NewConfigError("store installation token", err)
 	}
 
 	// Activate device
@@ -82,33 +83,39 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) {
 		output.PrintMsg("Cannot activate this device.", output.MsgError)
 		sm.cfgProvider.DeleteConfig()
 		log.Errorf("Error activating the device: %v", err)
-		return
+		return errors.NewNetworkError("activate device", err)
 	}
+	
 	if m.Status != remote.DeviceStatusLicensed && m.Status != remote.DeviceStatusTrial {
 		output.PrintMsg("Cannot activate this device. Check your license.", output.MsgError)
 		_ = sm.cfgProvider.DeleteConfig()
-		if config.Debug() {
-			log.Panic(fmt.Errorf("device status: %s", m.Status))
-		}
-		return
+		err := fmt.Errorf("device status: %s", m.Status)
+		return errors.NewAuthError("check license status", err)
 	}
+	
 	output.PrintMsg("Activated successfully!", output.MsgSuccess)
 	output.PrintMsg(fmt.Sprintf("License status: %s", m.Status), output.MsgSuccess)
+	return nil
 }
 
-func (sm *DefaultSessionManager) Logout() {
+func (sm *DefaultSessionManager) Logout() error {
 	installationToken, err := sm.cfgProvider.GetInstallationToken()
 	if err == nil {
-		sm.holocron.DeactivateDevice(installationToken)
+		_, deactivateErr := sm.holocron.DeactivateDevice(installationToken)
+		if deactivateErr != nil {
+			log.Errorf("Error deactivating device: %v", deactivateErr)
+			// Continue with logout even if deactivation fails
+		}
 	}
 
 	err = sm.cfgProvider.DeleteConfig()
 	if err != nil {
 		output.PrintMsg("There is no active session on your device.", output.MsgError)
-		return
+		return errors.NewUserError("There is no active session on your device.", err)
 	}
 
 	output.PrintMsg("Logged out successfully!", output.MsgSuccess)
+	return nil
 }
 
 func (sm *DefaultSessionManager) Active() bool {

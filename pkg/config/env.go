@@ -5,6 +5,7 @@ import "testing"
 var (
 	DebugFlag   bool
 	BuildEnv    string
+	BuildType   string
 	HolocronUrl string
 )
 

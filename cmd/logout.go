@@ -14,7 +14,8 @@ func NewLogoutCommand(sm session.SessionManager) *cobra.Command {
     Short: "Logout this device.",
     Long:  `Deactivates this device seat and cleans local configuration.`,
     Run: func(cmd *cobra.Command, args []string) {
-      sm.Logout()
+      err := sm.Logout()
+      HandleError(err)
     },
   }
 }
