@@ -36,8 +36,25 @@ build-st: build-st-release
 
 build-prod: build-prod-release
 
-install:
-	go install ./...
+# Install targets
+install-st-debug: build-st-debug
+	go install .
+
+install-st-release: build-st-release
+	go install .
+
+install-prod-debug: build-prod-debug
+	go install .
+
+install-prod-release: build-prod-release
+	go install .
+
+# Default install targets
+install-st: install-st-release
+
+install-prod: install-prod-release
+
+install: install-prod
 
 clean:
 	go clean
