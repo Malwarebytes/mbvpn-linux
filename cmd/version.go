@@ -1,3 +1,6 @@
+/*
+Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+*/
 package cmd
 
 import (
@@ -9,36 +12,15 @@ import (
 
 // NewVersionCommand creates a new version command
 func NewVersionCommand() *cobra.Command {
-	versionCmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "version",
 		Short: "Display version information",
-		Long:  `Display detailed version information about the MBVPN build`,
+		Long:  `Display the application version, build environment and build type.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			showVersion()
+			fmt.Printf("Version: %s\n", config.Version())
+			fmt.Printf("Environment: %s\n", config.BuildEnv)
+			fmt.Printf("Build Type: %s\n", config.BuildType)
+			fmt.Printf("Debug Mode: %t\n", config.Debug())
 		},
 	}
-
-	return versionCmd
-}
-
-func showVersion() {
-	fmt.Println("MBVPN Version Information")
-	fmt.Println("------------------------")
-	fmt.Printf("Environment: %s\n", getEnv())
-	fmt.Printf("Build Type:  %s\n", getBuildType())
-	fmt.Printf("Debug Mode:  %t\n", config.Debug())
-}
-
-func getEnv() string {
-	if config.BuildEnv == "" {
-		return "development"
-	}
-	return config.BuildEnv
-}
-
-func getBuildType() string {
-	if config.BuildType == "" {
-		return "debug"
-	}
-	return config.BuildType
 }

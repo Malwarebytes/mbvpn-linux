@@ -3,8 +3,17 @@ include .env
 BINARY_NAME=mbvpn
 GO_PKG=github.com/Malwarebytes/mbvpn
 
+# Version information
+VERSION_MAJOR ?= 0
+VERSION_MINOR ?= 0
+VERSION_PATCH ?= 1
+VERSION_BUILD ?= 0
+
 # Common flags
-COMMON_LDFLAGS=
+COMMON_LDFLAGS=-X '${GO_PKG}/pkg/config.VersionMajor=${VERSION_MAJOR}' \
+               -X '${GO_PKG}/pkg/config.VersionMinor=${VERSION_MINOR}' \
+               -X '${GO_PKG}/pkg/config.VersionPatch=${VERSION_PATCH}' \
+               -X '${GO_PKG}/pkg/config.VersionBuild=${VERSION_BUILD}'
 
 # Environment flags
 ST_ENV_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildEnv=staging' -X '${GO_PKG}/pkg/config.HolocronUrl=${MBVPN_HOLOCRON_URL_ST}'
