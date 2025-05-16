@@ -1,17 +1,25 @@
 package remote
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Malwarebytes/mbvpn/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
-type MockMachineIdProvider struct{}
+type MockMachineIdProvider struct{
+	shouldFail bool
+}
 
 func (m *MockMachineIdProvider) Get() (string, error) {
+	if m.shouldFail {
+		return "", fmt.Errorf("mock machine ID error")
+	}
 	return "mock-machine-id", nil
 }
 
@@ -30,6 +38,16 @@ func setupMockServer(response string) (*httptest.Server, *DefaultHolocron) {
 
 	api := NewMockHolocron(mockServer.URL, &MockMachineIdProvider{})
 	return mockServer, api
+}
+
+func TestNewDefaultHolocron(t *testing.T) {
+	mIdProvider := &MockMachineIdProvider{}
+	holocron := NewDefaultHolocron(mIdProvider)
+	
+	defaultHolocron, ok := holocron.(*DefaultHolocron)
+	assert.True(t, ok, "Should return DefaultHolocron implementation")
+	assert.Equal(t, config.HolocronUrl, defaultHolocron.baseUrl)
+	assert.Equal(t, mIdProvider, defaultHolocron.mIdProvider)
 }
 
 func TestApiSuccessCases(t *testing.T) {
@@ -70,6 +88,17 @@ func TestApiSuccessCases(t *testing.T) {
 			validate: func(t *testing.T, result interface{}) {
 				deviceModule := result.(*DeviceModule)
 				assert.Equal(t, DeviceStatusUnknown, deviceModule.Status)
+			},
+		},
+		{
+			name:     "CheckDevice",
+			response: `{"data": {"checkDevice": {"deviceModules": {"privacy": {"status": "licensed", "termEndsOn": "2025-12-31"}}}}}`,
+			testFunc: func(api *DefaultHolocron) (interface{}, error) {
+				return api.CheckDevice("mock-token")
+			},
+			validate: func(t *testing.T, result interface{}) {
+				deviceModule := result.(*DeviceModule)
+				assert.Equal(t, DeviceStatusLicensed, deviceModule.Status)
 			},
 		},
 		{
@@ -189,6 +218,13 @@ func TestApiErrorCases(t *testing.T) {
 			},
 		},
 		{
+			name:     "CheckDevice",
+			response: `{ "errors": [ { "message": "mock-error" } ] }`,
+			testFunc: func(api *DefaultHolocron) (interface{}, error) {
+				return api.CheckDevice("")
+			},
+		},
+		{
 			name:     "VpnRegisterPublicKey",
 			response: `{ "errors": [ { "message": "mock-error" } ] }`,
 			testFunc: func(api *DefaultHolocron) (interface{}, error) {
@@ -227,6 +263,151 @@ func TestApiErrorCases(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+// Mock implementation for HTTP client testing
+type mockReadCloser struct {
+	readErr bool
+}
+
+func (m *mockReadCloser) Read(p []byte) (int, error) {
+	if m.readErr {
+		return 0, fmt.Errorf("mock read error")
+	}
+	return 0, io.EOF
+}
+
+func (m *mockReadCloser) Close() error {
+	return nil
+}
+
+type mockTransport struct {
+	response *http.Response
+}
+
+func (m *mockTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return m.response, nil
+}
+
+func TestDoRequestMachineIdError(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"data": {"response": "mock-response"}}`))
+	}))
+	defer mockServer.Close()
+	
+	failingProvider := &MockMachineIdProvider{shouldFail: true}
+	api := NewMockHolocron(mockServer.URL, failingProvider)
+	
+	var body map[string]interface{}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &body, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get machine id")
+}
+
+func TestDoRequestInvalidBody(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"data": {"response": "mock-response"}}`))
+	}))
+	defer mockServer.Close()
+	
+	api := NewMockHolocron(mockServer.URL, &MockMachineIdProvider{})
+	
+	// Create a body that can't be marshaled to JSON
+	invalidBody := map[string]interface{}{
+		"func": func() {}, // Functions can't be marshaled to JSON
+	}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &invalidBody, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse request body")
+}
+
+func TestDoRequestNewRequestError(t *testing.T) {
+	// Test with a URL that will cause http.NewRequest to fail
+	api := &DefaultHolocron{
+		baseUrl:     string([]byte{0x7f}), // Invalid URL with control character
+		mIdProvider: &MockMachineIdProvider{},
+	}
+	
+	var body map[string]interface{}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &body, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create request")
+}
+
+func TestDoRequestParseResponseError(t *testing.T) {
+	// Create a custom transport that returns a response with JSON that can't be parsed
+	originalClient := client
+	defer func() { client = originalClient }()
+	
+	client = &http.Client{
+		Transport: &mockTransport{
+			response: &http.Response{
+				StatusCode: 200,
+				Body: io.NopCloser(strings.NewReader(`not a json response`)),
+			},
+		},
+	}
+	
+	api := &DefaultHolocron{
+		baseUrl:     "http://example.com",
+		mIdProvider: &MockMachineIdProvider{},
+	}
+	
+	var body map[string]interface{}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &body, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse")
+}
+
+func TestDoRequestReadBodyError(t *testing.T) {
+	// Create a custom transport that returns a response with a mock body reader that fails
+	originalClient := client
+	defer func() { client = originalClient }()
+	
+	client = &http.Client{
+		Transport: &mockTransport{
+			response: &http.Response{
+				StatusCode: 200,
+				Body: &mockReadCloser{readErr: true},
+			},
+		},
+	}
+	
+	api := &DefaultHolocron{
+		baseUrl:     "http://example.com",
+		mIdProvider: &MockMachineIdProvider{},
+	}
+	
+	var body map[string]interface{}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &body, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read response body")
+}
+
+func TestDoRequestBadURL(t *testing.T) {
+	api := &DefaultHolocron{
+		baseUrl:     "http://invalid-url-that-wont-resolve.example",
+		mIdProvider: &MockMachineIdProvider{},
+	}
+	
+	var body map[string]interface{}
+	var result map[string]interface{}
+	err := api.doRequest("mock-token", &body, &result)
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to execute request")
 }
 
 func TestDoRequestVariants(t *testing.T) {
