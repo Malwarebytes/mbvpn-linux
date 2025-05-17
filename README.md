@@ -161,32 +161,34 @@ End your session:
 
 ### Reducing Sudo Password Prompts
 
-The `connect` (alias `c`), `disconnect` (alias `d`), and `status` commands require root privileges to manage WireGuard interfaces. To reduce the frequency of sudo password prompts, you can configure sudo to allow passwordless execution of these specific commands:
+The `connect` (alias `c`), `disconnect` (alias `d`), and `status` commands require root privileges to manage WireGuard interfaces because they internally call WireGuard tools using sudo. To reduce the frequency of sudo password prompts, you need to configure sudo to allow passwordless execution of the WireGuard commands:
 
 1. Create a dedicated sudoers file:
 
 ```bash
-sudo visudo -f /etc/sudoers.d/mbvpn
+sudo visudo -f /etc/sudoers.d/wireguard
 ```
 
-2. Add the following content (replace `username` with your actual username and adjust the path if necessary):
+2. Add the following content (replace `username` with your actual username):
 
 ```
-# Allow user to run specific mbvpn commands without password
-username ALL=(ALL) NOPASSWD: /usr/local/bin/mbvpn connect, /usr/local/bin/mbvpn c, /usr/local/bin/mbvpn disconnect, /usr/local/bin/mbvpn d, /usr/local/bin/mbvpn status
+# Allow user to run WireGuard commands without password
+username ALL=(ALL) NOPASSWD: /usr/bin/wg, /usr/bin/wg-quick
 ```
 
 3. Set the correct permissions:
 
 ```bash
-sudo chmod 440 /etc/sudoers.d/mbvpn
+sudo chmod 440 /etc/sudoers.d/wireguard
 ```
 
-4. Test your configuration:
+4. Test your configuration by running one of the mbvpn commands that require WireGuard tools:
 
 ```bash
-sudo -l | grep mbvpn
+mbvpn status
 ```
+
+You should no longer be prompted for a password when running `mbvpn status`, `mbvpn connect`, or `mbvpn disconnect` commands.
 
 This allows you to run the specified commands without entering a password, while still requiring the `sudo` prefix.
 
