@@ -1,0 +1,112 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (format: vX.Y.Z)'
+        required: true
+        type: string
+      is_production:
+        description: 'Production release'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      major: ${{ steps.version.outputs.major }}
+      minor: ${{ steps.version.outputs.minor }}
+      patch: ${{ steps.version.outputs.patch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version components
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format. Must be vX.Y.Z"
+            exit 1
+          fi
+          VERSION_NUM="${VERSION#v}"
+          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: MBVPN ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+
+  build-binaries:
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64, 386]
+        os: [linux]
+    env:
+      BINARY_NAME: mbvpn-${{ matrix.os }}-${{ matrix.arch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Load environment variables
+        run: |
+          if [ -f .env ]; then
+            set -a
+            source .env
+            set +a
+          else
+            echo "Warning: .env file not found"
+            exit 1
+          fi
+
+      - name: Set version in environment
+        run: |
+          export VERSION_MAJOR=${{ needs.create-release.outputs.major }}
+          export VERSION_MINOR=${{ needs.create-release.outputs.minor }}
+          export VERSION_PATCH=${{ needs.create-release.outputs.patch }}
+          export VERSION_BUILD=0
+          echo "VERSION_MAJOR=$VERSION_MAJOR" >> $GITHUB_ENV
+          echo "VERSION_MINOR=$VERSION_MINOR" >> $GITHUB_ENV
+          echo "VERSION_PATCH=$VERSION_PATCH" >> $GITHUB_ENV
+          echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_ENV
+
+      - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
+        run: |
+          if [ "${{ github.event.inputs.is_production }}" == "true" ]; then
+            BUILD_TARGET=build-prod-release
+          else
+            BUILD_TARGET=build-st-release
+          fi
+          
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make $BUILD_TARGET
+          mv mbvpn ${{ env.BINARY_NAME }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./${{ env.BINARY_NAME }}
+          asset_name: ${{ env.BINARY_NAME }}
+          asset_content_type: application/octet-stream
