@@ -22,20 +22,36 @@ make install
 make clean
 
 # Build and run in Docker (development environment)
-make docker-restart
+make docker
 ```
 
 ## Testing Commands
 
 ```bash
+# Run all tests
+make test
+
+# Run unit tests only
+make test-unit
+
 # Run integration tests
-go test -tags=integration ./test/integration/...
+make test-integration
 
 # Run specific integration test
 go test -tags=integration ./test/integration/ -run TestRegisterDevice
 
 # Run e2e tests
-go test -tags=integration ./test/e2e/...
+make test-e2e
+
+# Run installation tests
+make test-install
+
+# Run installation tests for specific distros
+make test-install-ubuntu
+make test-install-fedora
+make test-install-centos
+make test-install-arch
+make test-install-opensuse
 ```
 
 ## Core Architecture
