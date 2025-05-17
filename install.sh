@@ -51,6 +51,50 @@ else
   echo -e "${GREEN}WireGuard tools already installed.${NC}"
 fi
 
+# Check for build dependencies (Go and Make)
+echo -e "\n${YELLOW}Checking build dependencies...${NC}"
+BUILD_DEPS_MISSING=false
+
+if ! command -v go &> /dev/null; then
+  echo -e "${YELLOW}Go not found. Go is required to build the application.${NC}"
+  BUILD_DEPS_MISSING=true
+fi
+
+if ! command -v make &> /dev/null; then
+  echo -e "${YELLOW}Make not found. Make is required to build the application.${NC}"
+  BUILD_DEPS_MISSING=true
+fi
+
+if [ "$BUILD_DEPS_MISSING" = true ]; then
+  echo -e "${YELLOW}Installing missing build dependencies...${NC}"
+  
+  # Detect package manager and install
+  if command -v apt-get &> /dev/null; then
+    apt-get update
+    [ ! -x "$(command -v go)" ] && apt-get install -y golang
+    [ ! -x "$(command -v make)" ] && apt-get install -y make
+  elif command -v dnf &> /dev/null; then
+    [ ! -x "$(command -v go)" ] && dnf install -y golang
+    [ ! -x "$(command -v make)" ] && dnf install -y make
+  elif command -v yum &> /dev/null; then
+    [ ! -x "$(command -v go)" ] && yum install -y golang
+    [ ! -x "$(command -v make)" ] && yum install -y make
+  elif command -v pacman &> /dev/null; then
+    [ ! -x "$(command -v go)" ] && pacman -S --noconfirm go
+    [ ! -x "$(command -v make)" ] && pacman -S --noconfirm make
+  elif command -v zypper &> /dev/null; then
+    [ ! -x "$(command -v go)" ] && zypper install -y go
+    [ ! -x "$(command -v make)" ] && zypper install -y make
+  else
+    echo -e "${RED}Unable to detect package manager. Please install Go and Make manually.${NC}"
+    exit 1
+  fi
+  
+  echo -e "${GREEN}Build dependencies installed successfully.${NC}"
+else
+  echo -e "${GREEN}Build dependencies already installed.${NC}"
+fi
+
 # Build MBVPN from source
 echo -e "\n${YELLOW}Building MBVPN from source...${NC}"
 if [ -f "Makefile" ]; then
@@ -59,8 +103,8 @@ if [ -f "Makefile" ]; then
   
   # If we have an existing mock binary, use it directly (for testing)
   if [ -f "./build/mbvpn" ] && [ -x "./build/mbvpn" ]; then
-    file_type=$(file ./build/mbvpn)
-    if echo "$file_type" | grep -q "shell script"; then
+    # Check if it's a shell script by looking at first line instead of using 'file' command
+    if head -n 1 "./build/mbvpn" | grep -q "^#!/bin/sh"; then
       echo -e "${YELLOW}Using pre-built mock binary for testing${NC}"
     else
       # Try to build using make

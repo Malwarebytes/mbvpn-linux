@@ -1,13 +1,8 @@
 FROM opensuse/leap:latest
 
-# Install dependencies needed for build and tests
+# Install minimal dependencies needed for testing
 RUN zypper refresh && zypper install -y \
-    gcc \
-    go \
-    git \
-    make \
     sudo \
-    file \
     && zypper clean
 
 # Add a test user

@@ -3,14 +3,9 @@ FROM ubuntu:latest
 # Set non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies needed for build and tests
+# Install minimal dependencies needed for testing
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    golang \
-    git \
-    make \
     sudo \
-    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Add a test user
