@@ -60,7 +60,7 @@ func TestLogoutAfterLogin(t *testing.T) {
 	defer cleanupTestHome(t, homeDir)
 
 	// Execute the login command with a valid license key
-	_, _ = execCommand(t, []string{"login", "--licenseKey", validLicenseKey, "--debug"}, homeDir)
+	_, _ = execCommand(t, []string{"login", "--licenseKey", getValidLicenseKey(), "--debug"}, homeDir)
 	
 	// If the login was successful and created a config file
 	if checkConfigFile(t, homeDir) {

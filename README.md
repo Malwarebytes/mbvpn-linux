@@ -104,6 +104,14 @@ go test -tags=integration ./test/integration/ -run TestRegisterDevice
 go test -tags=integration ./test/e2e/...
 ```
 
+For security reasons, the tests require a license key to be provided through an environment variable. Before running tests, you must set:
+
+```bash
+export MBVPN_TEST_LICENSE_KEY="your-license-key-here"
+```
+
+Tests will fail if this environment variable is not set.
+
 ### Installation Script Testing
 
 The installation script tests verify proper functioning on multiple Linux distributions using Docker containers:

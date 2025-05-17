@@ -13,7 +13,7 @@ func TestLoginWithValidLicenseKey(t *testing.T) {
 	defer cleanupTestHome(t, homeDir)
 
 	// Execute the login command with a valid license key
-	output, err := execCommand(t, []string{"login", "--licenseKey", validLicenseKey, "--debug"}, homeDir)
+	output, err := execCommand(t, []string{"login", "--licenseKey", getValidLicenseKey(), "--debug"}, homeDir)
 	
 	// Even if the command fails due to network or backend issues, we're testing the command execution
 	// not the actual activation process which requires real backend connectivity
@@ -102,7 +102,7 @@ func TestLoginAlreadyLoggedIn(t *testing.T) {
 	createMockSession(t, homeDir)
 
 	// Execute the login command with a valid license key
-	output, _ := execCommand(t, []string{"login", "--licenseKey", validLicenseKey, "--debug"}, homeDir)
+	output, _ := execCommand(t, []string{"login", "--licenseKey", getValidLicenseKey(), "--debug"}, homeDir)
 	
 	// Check the output for expected error message
 	if !strings.Contains(output, "active session") {
@@ -118,7 +118,7 @@ func TestLoginInvalidFlags(t *testing.T) {
 	// Execute the login command with both license key and MB code (should be one or the other)
 	output, err := execCommand(t, []string{
 		"login", 
-		"--licenseKey", validLicenseKey, 
+		"--licenseKey", getValidLicenseKey(), 
 		"--mbCode", invalidMbCode, 
 		"--debug",
 	}, homeDir)

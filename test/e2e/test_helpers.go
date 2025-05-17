@@ -14,10 +14,18 @@ import (
 )
 
 const (
-	validLicenseKey   = "CBKGF-JRFZJ-FZYF8-4QR8E" // Sample license key for testing
 	invalidLicenseKey = "AAAAA-BBBBB-CCCCC-DDDDD"
 	invalidMbCode     = "MB-12345" // Invalid MB code
 )
+
+// getValidLicenseKey returns license key from environment variable
+func getValidLicenseKey() string {
+	licenseKey := os.Getenv("MBVPN_TEST_LICENSE_KEY")
+	if licenseKey == "" {
+		panic("MBVPN_TEST_LICENSE_KEY environment variable is required but not set")
+	}
+	return licenseKey
+}
 
 // setupTestHome creates a temporary home directory for testing
 func setupTestHome(t *testing.T) string {
