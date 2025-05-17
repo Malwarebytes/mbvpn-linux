@@ -16,11 +16,6 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      major: ${{ steps.version.outputs.major }}
-      minor: ${{ steps.version.outputs.minor }}
-      patch: ${{ steps.version.outputs.patch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,24 +30,26 @@ jobs:
           fi
           VERSION_NUM="${VERSION#v}"
           IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
-          echo "major=$MAJOR" >> $GITHUB_OUTPUT
-          echo "minor=$MINOR" >> $GITHUB_OUTPUT
-          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
+          echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
+          echo "PATCH=$PATCH" >> $GITHUB_OUTPUT
+          echo "VERSION_MAJOR=$MAJOR" >> $GITHUB_ENV
+          echo "VERSION_MINOR=$MINOR" >> $GITHUB_ENV
+          echo "VERSION_PATCH=$PATCH" >> $GITHUB_ENV
+          echo "VERSION_BUILD=0" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          release_name: MBVPN ${{ github.event.inputs.version }}
-          draft: false
-          prerelease: false
+        run: |
+          gh release create ${{ github.event.inputs.version }} \
+            --title "MBVPN ${{ github.event.inputs.version }}" \
+            --notes "MBVPN Release ${{ github.event.inputs.version }}"
 
   build-binaries:
     needs: create-release
     runs-on: ubuntu-latest
+    environment: prod
     strategy:
       matrix:
         arch: [amd64, arm64, 386]
@@ -70,9 +67,9 @@ jobs:
 
       - name: Set version in environment
         run: |
-          export VERSION_MAJOR=${{ needs.create-release.outputs.major }}
-          export VERSION_MINOR=${{ needs.create-release.outputs.minor }}
-          export VERSION_PATCH=${{ needs.create-release.outputs.patch }}
+          export VERSION_MAJOR=${{ needs.create-release.outputs.MAJOR }}
+          export VERSION_MINOR=${{ needs.create-release.outputs.MINOR }}
+          export VERSION_PATCH=${{ needs.create-release.outputs.PATCH }}
           export VERSION_BUILD=0
           echo "VERSION_MAJOR=$VERSION_MAJOR" >> $GITHUB_ENV
           echo "VERSION_MINOR=$VERSION_MINOR" >> $GITHUB_ENV
@@ -91,11 +88,7 @@ jobs:
           mv mbvpn ${{ env.BINARY_NAME }}
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./${{ env.BINARY_NAME }}
-          asset_name: ${{ env.BINARY_NAME }}
-          asset_content_type: application/octet-stream
+        run: |
+          gh release upload ${{ github.event.inputs.version }} ${{ env.BINARY_NAME }}
