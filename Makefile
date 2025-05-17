@@ -1,4 +1,4 @@
-include .env
+-include .env
 
 BINARY_NAME=mbvpn
 GO_PKG=github.com/Malwarebytes/mbvpn
