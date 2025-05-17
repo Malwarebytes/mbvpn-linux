@@ -2,6 +2,7 @@ include .env
 
 BINARY_NAME=mbvpn
 GO_PKG=github.com/Malwarebytes/mbvpn
+GOFLAGS ?=
 
 # Version information
 VERSION_MAJOR ?= 0
@@ -29,16 +30,16 @@ RELEASE_GCFLAGS=-trimpath
 
 # Build matrix targets
 build-st-debug:
-	go build -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
 
 build-st-release:
-	go build -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
 
 build-prod-debug:
-	go build -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
 
 build-prod-release:
-	go build -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
 
 # Default targets
 build-st: build-st-release
@@ -77,6 +78,25 @@ test-integration: build-st-release
 
 test-e2e: build-st-release
 	go test -tags=e2e -v ./test/e2e/...
+
+# Installation script tests
+test-install:
+	./test/install/run_tests.sh
+
+test-install-ubuntu:
+	./test/install/run_tests.sh -d ubuntu
+
+test-install-fedora:
+	./test/install/run_tests.sh -d fedora
+
+test-install-centos:
+	./test/install/run_tests.sh -d centos
+
+test-install-arch:
+	./test/install/run_tests.sh -d arch
+
+test-install-opensuse:
+	./test/install/run_tests.sh -d opensuse
 
 clean:
 	go clean

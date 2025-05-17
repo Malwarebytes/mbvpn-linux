@@ -1,0 +1,21 @@
+FROM opensuse/leap:latest
+
+# Install dependencies needed for build and tests
+RUN zypper refresh && zypper install -y \
+    gcc \
+    go \
+    git \
+    make \
+    sudo \
+    file \
+    && zypper clean
+
+# Add a test user
+RUN useradd -m -s /bin/bash tester && \
+    echo "tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tester
+
+# Set working directory
+WORKDIR /mbvpn
+
+# We'll copy the project files at runtime
+CMD ["/bin/bash"]

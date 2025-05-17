@@ -1,0 +1,24 @@
+FROM ubuntu:latest
+
+# Set non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies needed for build and tests
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    golang \
+    git \
+    make \
+    sudo \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add a test user
+RUN useradd -m -s /bin/bash tester && \
+    echo "tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tester
+
+# Set working directory
+WORKDIR /mbvpn
+
+# We'll copy the project files at runtime
+CMD ["/bin/bash"]

@@ -12,13 +12,56 @@ The tool is in experimental mode, so it is important to know which parts of the 
 
 ## Prerequisites
 
-Install WireGuard tools using your preferred package manager:
-- `wg`
-- `wg-quick`
+WireGuard tools are required for MBVPN to function properly. These will be automatically installed by the installation script, but you can also install them manually with your package manager:
+
+- For Ubuntu/Debian: `sudo apt install wireguard wireguard-tools`
+- For Fedora: `sudo dnf install wireguard-tools`
+- For CentOS/RHEL: `sudo yum install wireguard-tools`
+- For Arch Linux: `sudo pacman -S wireguard-tools`
+- For openSUSE: `sudo zypper install wireguard-tools`
 
 ## Installation
 
-1. Download and unpack the latest release for your architecture from "Releases".
+### Option 1: Using the Installation Script (Recommended)
+
+For a quick and easy installation, run the following command in your terminal:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Malwarebytes/mbvpn/main/install.sh | sudo bash
+```
+
+The script will:
+1. Check system requirements
+2. Install WireGuard dependencies if needed
+3. Build MBVPN from source
+4. Install the binary to `/usr/local/bin/mbvpn`
+
+> Note: The script requires sudo privileges to install dependencies and place the binary in system directories.
+
+### Option 2: Manual Installation
+
+If you prefer to install manually:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Malwarebytes/mbvpn.git
+   cd mbvpn
+   ```
+
+2. Build the binary:
+   ```bash
+   make build-prod
+   ```
+
+3. Install to your system:
+   ```bash
+   sudo cp ./build/mbvpn /usr/local/bin/mbvpn
+   sudo chmod +x /usr/local/bin/mbvpn
+   ```
+
+### Option 3: From Releases
+
+1. Download and unpack the latest release for your architecture from the "Releases" page.
 2. Update the `$PATH` variable to have access to the unpacked binary.
 
 ## Build Configuration
@@ -45,6 +88,45 @@ You can check your build configuration with the command:
 ```
 mbvpn version
 ```
+
+## Testing
+
+### Integration and E2E Tests
+
+```bash
+# Run integration tests
+go test -tags=integration ./test/integration/...
+
+# Run specific integration test
+go test -tags=integration ./test/integration/ -run TestRegisterDevice
+
+# Run e2e tests
+go test -tags=integration ./test/e2e/...
+```
+
+### Installation Script Testing
+
+The installation script tests verify proper functioning on multiple Linux distributions using Docker containers:
+
+```bash
+# Test on all supported Linux distributions
+make test-install
+
+# Test on a specific distribution
+make test-install-ubuntu
+make test-install-fedora
+make test-install-centos
+make test-install-arch
+make test-install-opensuse
+```
+
+Each test:
+1. Builds a Docker container for the target distribution
+2. Tests the installation script inside the container
+3. Verifies WireGuard tools installation
+4. Confirms proper binary installation
+
+> Note: Running installation tests requires Docker to be installed on your system.
 
 ## Usage
 

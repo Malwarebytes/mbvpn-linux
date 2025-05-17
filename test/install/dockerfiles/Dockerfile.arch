@@ -1,0 +1,20 @@
+FROM archlinux:latest
+
+# Update system and install dependencies
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm \
+    base-devel \
+    go \
+    git \
+    sudo \
+    file \
+    && pacman -Scc --noconfirm
+
+# Add a test user
+RUN useradd -m -s /bin/bash tester && \
+    echo "tester ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tester
+
+# Set working directory
+WORKDIR /mbvpn
+
+# We'll copy the project files at runtime
+CMD ["/bin/bash"]
