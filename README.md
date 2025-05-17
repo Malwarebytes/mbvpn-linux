@@ -151,16 +151,47 @@ View available servers and locations:
 ### Connection Management
 
 Connect to a server:
-`mbvpn connect <server>` (or the shorthand `mbvpn c <server>`)
+`sudo mbvpn connect <server>` (or the shorthand `sudo mbvpn c <server>`)
 
 Disconnect from VPN:
-`mbvpn disconnect` (or the shorthand `mbvpn d`)
+`sudo mbvpn disconnect` (or the shorthand `sudo mbvpn d`)
 
 Check connection status:
-`mbvpn status`
+`sudo mbvpn status`
 
 End your session:
 `mbvpn logout`
+
+### Reducing Sudo Password Prompts
+
+The `connect` (alias `c`), `disconnect` (alias `d`), and `status` commands require root privileges to manage WireGuard interfaces. To reduce the frequency of sudo password prompts, you can configure sudo to allow passwordless execution of these specific commands:
+
+1. Create a dedicated sudoers file:
+
+```bash
+sudo visudo -f /etc/sudoers.d/mbvpn
+```
+
+2. Add the following content (replace `username` with your actual username and adjust the path if necessary):
+
+```
+# Allow user to run specific mbvpn commands without password
+username ALL=(ALL) NOPASSWD: /usr/local/bin/mbvpn connect, /usr/local/bin/mbvpn c, /usr/local/bin/mbvpn disconnect, /usr/local/bin/mbvpn d, /usr/local/bin/mbvpn status
+```
+
+3. Set the correct permissions:
+
+```bash
+sudo chmod 440 /etc/sudoers.d/mbvpn
+```
+
+4. Test your configuration:
+
+```bash
+sudo -l | grep mbvpn
+```
+
+This allows you to run the specified commands without entering a password, while still requiring the `sudo` prefix.
 
 ## Debug Mode and Logging
 

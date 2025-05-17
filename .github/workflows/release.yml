@@ -68,17 +68,6 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Load environment variables
-        run: |
-          if [ -f .env ]; then
-            set -a
-            source .env
-            set +a
-          else
-            echo "Warning: .env file not found"
-            exit 1
-          fi
-
       - name: Set version in environment
         run: |
           export VERSION_MAJOR=${{ needs.create-release.outputs.major }}
