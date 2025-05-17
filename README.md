@@ -10,25 +10,22 @@ The tool is in experimental mode, so it is important to know which parts of the 
   - WireGuard configurations: `~/.config/mbvpn/servers/*.conf`
 - `logout` command removes the configuration files but keeps WireGuard interfaces in the system
 
-## Prerequisites
-
-WireGuard tools are required for MBVPN to function properly. These will be automatically installed by the installation script, but you can also install them manually with your package manager:
-
-- For Ubuntu/Debian: `sudo apt install wireguard wireguard-tools`
-- For Fedora: `sudo dnf install wireguard-tools`
-- For CentOS/RHEL: `sudo yum install wireguard-tools`
-- For Arch Linux: `sudo pacman -S wireguard-tools`
-- For openSUSE: `sudo zypper install wireguard-tools`
-
 ## Installation
 
-### Option 1: Using the Installation Script (Recommended)
+### Option 1: Recommended Installation
 
-For a quick and easy installation, run the following command in your terminal:
+The recommended installation method is to clone the repository and run the installation script:
 
-```bash
-curl -sSL https://raw.githubusercontent.com/Malwarebytes/mbvpn/main/install.sh | sudo bash
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Malwarebytes/mbvpn.git
+   cd mbvpn
+   ```
+
+2. Run the installation script:
+   ```bash
+   ./install.sh
+   ```
 
 The script will:
 1. Check system requirements
@@ -38,28 +35,20 @@ The script will:
 
 > Note: The script requires sudo privileges to install dependencies and place the binary in system directories.
 
-### Option 2: Manual Installation
+### Option 2: From Releases
 
-If you prefer to install manually:
+1. Download and unpack the latest release for your architecture from the "Releases" page.
+2. Update the `$PATH` variable to have access to the unpacked binary.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Malwarebytes/mbvpn.git
-   cd mbvpn
-   ```
+#### Prerequisites for Manual Installation
 
-2. Build the binary:
-   ```bash
-   make build-prod
-   ```
+WireGuard tools are required for MBVPN to function properly. If installing manually, you can install them with your package manager:
 
-3. Install to your system:
-   ```bash
-   sudo cp ./build/mbvpn /usr/local/bin/mbvpn
-   sudo chmod +x /usr/local/bin/mbvpn
-   ```
-
-### Option 3: From Releases
+- For Ubuntu/Debian: `sudo apt install wireguard wireguard-tools`
+- For Fedora: `sudo dnf install wireguard-tools`
+- For CentOS/RHEL: `sudo yum install wireguard-tools`
+- For Arch Linux: `sudo pacman -S wireguard-tools`
+- For openSUSE: `sudo zypper install wireguard-tools`
 
 1. Download and unpack the latest release for your architecture from the "Releases" page.
 2. Update the `$PATH` variable to have access to the unpacked binary.
