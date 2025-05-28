@@ -22,13 +22,10 @@ var ErrorHandler *errors.Handler
 
 var rootCmd = &cobra.Command{
 	Use:   "mbvpn",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Malwarebytes VPN command-line client",
+	Long: `MBVPN is a command-line VPN client for Malwarebytes VPN service.
+Manage your VPN connections, browse available servers, and control
+your privacy settings from the terminal. Requires a valid Malwarebytes license.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		debug, _ := cmd.Flags().GetBool("debug")
 		trace, _ := cmd.Flags().GetBool("trace")

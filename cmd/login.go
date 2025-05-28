@@ -12,8 +12,8 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Activates this device with your Malwarebytes license.",
-		Long: `Uses provided creadentials to perform activation for this device.
-   The command claimes available seat of your Malwarebytes license.`,
+		Long: `Uses provided credentials to perform activation for this device.
+   The command claims available seat of your Malwarebytes license.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var err error
 			
