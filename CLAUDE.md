@@ -12,17 +12,26 @@ MBVPN is a command-line tool for Linux that interfaces with Malwarebytes VPN ser
 # Build for staging environment
 make build-st
 
-# Build for production environment
+# Build for production environment  
 make build-prod
 
-# Install the binary
+# Build staging debug version
+make build-st-debug
+
+# Build production debug version
+make build-prod-debug
+
+# Install the binary (production)
 make install
+
+# Install staging version
+make install-st
 
 # Clean build artifacts
 make clean
 
-# Build and run in Docker (development environment)
-make docker
+# Restart Docker environment
+make docker-restart
 ```
 
 ## Testing Commands
@@ -61,7 +70,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 ### Command Layer (cmd/)
 
 - Uses Cobra library for CLI functionality
-- Commands include: login, logout, connect (up), disconnect (down), status, servers, countries, cities
+- Commands include: login, logout, connect, disconnect, status, servers, countries, cities
 
 ### Configuration (pkg/config/)
 
@@ -119,6 +128,11 @@ The codebase follows a modular architecture with clear separation of concerns:
 - `MBVPN_HOLOCRON_URL_ST` - Staging environment API URL (set in .env file)
 - `MBVPN_HOLOCRON_URL_PROD` - Production environment API URL (set in .env file)
 
-## Commit messages
+## Commit Messages
 
-- Do not add information about Claude Code to commit messages.
+**IMPORTANT**: Do NOT include any references to Claude Code, AI assistance, or co-authorship information in commit messages. Write clean, professional commit messages that focus solely on the changes made.
+
+- Use conventional commit format when possible
+- Focus on what was changed and why
+- Do not mention Claude Code, AI tools, or add Co-Authored-By tags
+- Keep messages concise and descriptive
