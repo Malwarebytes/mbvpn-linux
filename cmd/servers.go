@@ -13,13 +13,9 @@ import (
 func NewServersCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "servers",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+		Short: "List all available VPN servers",
+		Long: `Displays a comprehensive list of all available VPN servers with their
+locations, names, and connection details. Requires an active session.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if sm.Active() {
 				err := vpn.Servers(true, true)

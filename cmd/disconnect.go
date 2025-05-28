@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewDownCommand(vpn vpn.Vpn) *cobra.Command {
+func NewDisconnectCommand(vpn vpn.Vpn) *cobra.Command {
 	return &cobra.Command{
 		Use:   "disconnect",
 		Aliases: []string{"d"},
@@ -20,7 +20,7 @@ func NewDownCommand(vpn vpn.Vpn) *cobra.Command {
 				server = args[0]
 			}
 			
-			err := vpn.Down(server)
+			err := vpn.Disconnect(server)
 			HandleError(err)
 		},
 	}

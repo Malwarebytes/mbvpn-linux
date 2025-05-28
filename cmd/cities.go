@@ -14,13 +14,9 @@ import (
 func NewCitiesCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cities",
-		Short: "A brief description of your command",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+		Short: "List available cities with VPN servers",
+		Long: `Displays a list of cities where VPN servers are located.
+Provides more specific geographic options than countries. Requires an active session.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if sm.Active() {
 				err := vpn.Servers(true, false)

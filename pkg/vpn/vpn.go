@@ -18,8 +18,8 @@ import (
 
 type Vpn interface {
 	Servers(showCities bool, showServers bool) error
-	Up(cfg string) error
-	Down(cfg string) error
+	Connect(cfg string) error
+	Disconnect(cfg string) error
 	Status() error
 }
 
@@ -219,7 +219,7 @@ func getCountryFlag(countryCode string) string {
 	return "🌍" // Default earth globe if conversion isn't possible
 }
 
-func (vpn *DefaultVpn) Up(cfg string) error {
+func (vpn *DefaultVpn) Connect(cfg string) error {
 	installationToken, err := vpn.cfgProvider.GetInstallationToken()
 	if err != nil {
 		return errors.NewConfigError("get installation token", err)
@@ -277,7 +277,7 @@ func (vpn *DefaultVpn) Up(cfg string) error {
 	return nil
 }
 
-func (vpn *DefaultVpn) Down(cfg string) error {
+func (vpn *DefaultVpn) Disconnect(cfg string) error {
 	if cfg == "" {
 		servers, err := getConnectedServers()
 		if err != nil {
@@ -285,7 +285,7 @@ func (vpn *DefaultVpn) Down(cfg string) error {
 		}
 		
 		for _, s := range servers {
-			err := vpn.Down(s)
+			err := vpn.Disconnect(s)
 			if err != nil {
 				// Continue trying to disconnect other servers even if one fails
 				log.Errorf("Failed to disconnect from %s: %v", s, err)
