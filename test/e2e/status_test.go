@@ -15,17 +15,19 @@ func TestStatusCommandNotLoggedIn(t *testing.T) {
 	// Execute the status command without being logged in
 	output, err := execCommand(t, []string{"status"}, homeDir)
 	
-	// Status command should fail when not logged in or when sudo is required
-	if err == nil {
-		t.Errorf("Status command should fail when not logged in, but succeeded with output: %s", output)
+	// Status command works without session and shows network status
+	if err != nil {
+		t.Errorf("Status command failed unexpectedly: %v", err)
 	}
 	
-	// Check that output contains appropriate error message (either not logged in or sudo/wg error)
-	if !strings.Contains(output, "not logged in") && 
-	   !strings.Contains(output, "No active session") && 
-	   !strings.Contains(output, "sudo") && 
-	   !strings.Contains(output, "wg show") {
-		t.Errorf("Expected error message about authentication or sudo requirements, got: %s", output)
+	// Should show network status information
+	if strings.TrimSpace(output) == "" {
+		t.Errorf("Status command should show network status, got empty output")
+	}
+	
+	// Should show VPN status (enabled/disabled)
+	if !strings.Contains(output, "VPN enabled:") {
+		t.Errorf("Expected VPN status information, got: %s", output)
 	}
 }
 
@@ -50,7 +52,7 @@ func TestStatusCommandNotConnected(t *testing.T) {
 	}
 	
 	// If it succeeds, check that output indicates not connected status
-	if !strings.Contains(output, "disconnected") && !strings.Contains(output, "Not connected") && !strings.Contains(output, "inactive") {
+	if !strings.Contains(output, "VPN enabled: false") && !strings.Contains(output, "No active connections") {
 		t.Errorf("Expected disconnected status message, got: %s", output)
 	}
 }

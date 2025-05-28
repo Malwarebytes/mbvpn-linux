@@ -77,7 +77,7 @@ test-integration: build-st-release
 	go test -tags=integration -v ./test/integration/...
 
 test-e2e: build-st-release
-	MBVPN_TEST_LICENSE_KEY=${MBVPN_TEST_LICENSE_KEY} go test -tags=e2e -v ./test/e2e/...
+	docker-compose run --rm mbvpn sh -c "MBVPN_TEST_LICENSE_KEY=${MBVPN_TEST_LICENSE_KEY} go test -tags=e2e -v ./test/e2e/..."
 
 # Installation script tests
 test-install:
