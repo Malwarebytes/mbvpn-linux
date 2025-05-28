@@ -33,6 +33,13 @@ func TestLoginWithValidLicenseKey(t *testing.T) {
 	// 2. Presence of a config file with installation token
 	if checkConfigFile(t, homeDir) {
 		t.Logf("Config file was created successfully")
+		
+		// Logout to free the claimed seat
+		logoutOutput, logoutErr := execCommand(t, []string{"logout", "--debug"}, homeDir)
+		if logoutErr != nil {
+			t.Logf("Logout command returned error (expected in test environment): %v", logoutErr)
+		}
+		t.Logf("Logout output: %s", logoutOutput)
 	}
 }
 
