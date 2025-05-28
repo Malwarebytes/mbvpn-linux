@@ -24,5 +24,8 @@ go.work.sum
 # env file
 .env
 
+# build folder
+build/
+
 # Main binary
 mbvpn
