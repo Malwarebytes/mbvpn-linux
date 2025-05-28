@@ -1,6 +1,6 @@
 //go:build e2e
 
-package main
+package e2e_test
 
 import (
 	"strings"
