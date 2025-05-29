@@ -16,6 +16,10 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    outputs:
+      MAJOR: ${{ steps.version.outputs.MAJOR }}
+      MINOR: ${{ steps.version.outputs.MINOR }}
+      PATCH: ${{ steps.version.outputs.PATCH }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,7 +40,7 @@ jobs:
           echo "VERSION_MAJOR=$MAJOR" >> $GITHUB_ENV
           echo "VERSION_MINOR=$MINOR" >> $GITHUB_ENV
           echo "VERSION_PATCH=$PATCH" >> $GITHUB_ENV
-          echo "VERSION_BUILD=0" >> $GITHUB_ENV
+          echo "VERSION_BUILD=${{ github.run_number }}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         env:
@@ -49,43 +53,38 @@ jobs:
   build-binaries:
     needs: create-release
     runs-on: ubuntu-latest
-    environment: prod
+    environment: ${{ github.event.inputs.is_production == 'true' && 'prod' || 'stage' }}
     strategy:
       matrix:
         arch: [amd64, arm64, 386]
         os: [linux]
     env:
       BINARY_NAME: mbvpn-${{ matrix.os }}-${{ matrix.arch }}
-      MBVPN_HOLOCRON_URL_PROD: $MBVPN_HOLOCRON_URL_PROD
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.23'
 
       - name: Set version in environment
         run: |
           export VERSION_MAJOR=${{ needs.create-release.outputs.MAJOR }}
           export VERSION_MINOR=${{ needs.create-release.outputs.MINOR }}
           export VERSION_PATCH=${{ needs.create-release.outputs.PATCH }}
-          export VERSION_BUILD=0
+          export VERSION_BUILD=${{ github.run_number }}
           echo "VERSION_MAJOR=$VERSION_MAJOR" >> $GITHUB_ENV
           echo "VERSION_MINOR=$VERSION_MINOR" >> $GITHUB_ENV
           echo "VERSION_PATCH=$VERSION_PATCH" >> $GITHUB_ENV
           echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_ENV
 
       - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
+        env:
+          MBVPN_HOLOCRON_URL: ${{ vars.MBVPN_HOLOCRON_URL }}
         run: |
-          if [ "${{ github.event.inputs.is_production }}" == "true" ]; then
-            BUILD_TARGET=build-prod-release
-          else
-            BUILD_TARGET=build-st-release
-          fi
-          
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make $BUILD_TARGET
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make build-release
           mv mbvpn ${{ env.BINARY_NAME }}
 
       - name: Upload Release Asset

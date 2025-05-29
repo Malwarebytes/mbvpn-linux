@@ -11,23 +11,20 @@ MBVPN is a command-line tool for Linux that interfaces with Malwarebytes VPN ser
 **IMPORTANT**: All build, test, and Go commands must be run inside the Docker container using the docker-compose wrapper.
 
 ```bash
-# Build for staging environment
-docker-compose run --rm mbvpn make build-st
+# Build release version
+docker-compose run --rm mbvpn make build
 
-# Build for production environment  
-docker-compose run --rm mbvpn make build-prod
+# Build debug version
+docker-compose run --rm mbvpn make build-debug
 
-# Build staging debug version
-docker-compose run --rm mbvpn make build-st-debug
+# Build release version (explicit)
+docker-compose run --rm mbvpn make build-release
 
-# Build production debug version
-docker-compose run --rm mbvpn make build-prod-debug
-
-# Install the binary (production)
+# Install the binary
 docker-compose run --rm mbvpn make install
 
-# Install staging version
-docker-compose run --rm mbvpn make install-st
+# Install debug version
+docker-compose run --rm mbvpn make install-debug
 
 # Clean build artifacts
 docker-compose run --rm mbvpn make clean
@@ -129,8 +126,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 
 ## Environment Variables
 
-- `MBVPN_HOLOCRON_URL_ST` - Staging environment API URL (set in .env file)
-- `MBVPN_HOLOCRON_URL_PROD` - Production environment API URL (set in .env file)
+- `MBVPN_HOLOCRON_URL` - Holocron API URL (set in .env file)
 
 ## Commit Messages
 

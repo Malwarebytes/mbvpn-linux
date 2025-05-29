@@ -17,8 +17,7 @@ COMMON_LDFLAGS=-X '${GO_PKG}/pkg/config.VersionMajor=${VERSION_MAJOR}' \
                -X '${GO_PKG}/pkg/config.VersionBuild=${VERSION_BUILD}'
 
 # Environment flags
-ST_ENV_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildEnv=staging' -X '${GO_PKG}/pkg/config.HolocronUrl=${MBVPN_HOLOCRON_URL_ST}'
-PROD_ENV_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildEnv=production' -X '${GO_PKG}/pkg/config.HolocronUrl=${MBVPN_HOLOCRON_URL_PROD}'
+ENV_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildEnv=production' -X '${GO_PKG}/pkg/config.HolocronUrl=${MBVPN_HOLOCRON_URL}'
 
 # Debug flags
 DEBUG_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildType=debug'
@@ -28,43 +27,25 @@ DEBUG_GCFLAGS=-N -l
 RELEASE_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildType=release'
 RELEASE_GCFLAGS=-trimpath
 
-# Build matrix targets
-build-st-debug:
-	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
+# Build targets
+build-debug:
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
 
-build-st-release:
-	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
+build-release:
+	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
 
-build-prod-debug:
-	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
-
-build-prod-release:
-	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${RELEASE_LDFLAGS}"
-
-# Default targets
-build-st: build-st-release
-
-build-prod: build-prod-release
+# Default target
+build: build-release
 
 # Install targets
-install-st-debug: 
-	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
+install-debug: 
+	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
 
-install-st-release: 
-	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ST_ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
+install-release: 
+	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
 
-install-prod-debug: 
-	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
-
-install-prod-release: 
-	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${PROD_ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
-
-# Default install targets
-install-st: install-st-release
-
-install-prod: install-prod-release
-
-install: install-prod
+# Default install target
+install: install-release
 
 # Test targets
 test:
@@ -73,10 +54,10 @@ test:
 test-unit:
 	go test -v ./pkg/... ./cmd/...
 
-test-integration: build-st-release
+test-integration: build-release
 	go test -tags=integration -v ./test/integration/...
 
-test-e2e: build-st-release
+test-e2e: build-release
 	MBVPN_TEST_LICENSE_KEY=${MBVPN_TEST_LICENSE_KEY} go test -tags=e2e -v ./test/e2e/...
 
 # Installation script tests
