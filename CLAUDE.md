@@ -12,25 +12,25 @@ MBVPN is a command-line tool for Linux that interfaces with Malwarebytes VPN ser
 
 ```bash
 # Build for staging environment
-docker-compose exec mbvpn make build-st
+docker-compose run --rm mbvpn make build-st
 
 # Build for production environment  
-docker-compose exec mbvpn make build-prod
+docker-compose run --rm mbvpn make build-prod
 
 # Build staging debug version
-docker-compose exec mbvpn make build-st-debug
+docker-compose run --rm mbvpn make build-st-debug
 
 # Build production debug version
-docker-compose exec mbvpn make build-prod-debug
+docker-compose run --rm mbvpn make build-prod-debug
 
 # Install the binary (production)
-docker-compose exec mbvpn make install
+docker-compose run --rm mbvpn make install
 
 # Install staging version
-docker-compose exec mbvpn make install-st
+docker-compose run --rm mbvpn make install-st
 
 # Clean build artifacts
-docker-compose exec mbvpn make clean
+docker-compose run --rm mbvpn make clean
 
 # Restart Docker environment
 make docker-restart
@@ -42,19 +42,19 @@ make docker-restart
 
 ```bash
 # Run all tests
-docker-compose exec mbvpn make test
+docker-compose run --rm mbvpn make test
 
 # Run unit tests only
-docker-compose exec mbvpn make test-unit
+docker-compose run --rm mbvpn make test-unit
 
 # Run integration tests
-docker-compose exec mbvpn make test-integration
+docker-compose run --rm mbvpn make test-integration
 
 # Run specific integration test
-docker-compose exec mbvpn go test -tags=integration ./test/integration/ -run TestRegisterDevice
+docker-compose run --rm mbvpn go test -tags=integration ./test/integration/ -run TestRegisterDevice
 
 # Run e2e tests
-docker-compose exec mbvpn make test-e2e
+docker-compose run --rm mbvpn make test-e2e
 
 # Run installation tests
 make test-install
