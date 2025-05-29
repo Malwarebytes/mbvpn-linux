@@ -183,16 +183,24 @@ func TestDefaultServerStorage_Save_Errors(t *testing.T) {
 			t.Fatalf("Failed to change directory permissions: %v", err)
 		}
 
+		// Ensure permissions cleanup happens even if test fails
+		defer func() {
+			os.Chmod(configDir, 0755)
+		}()
+
 		err = storage.Save(locations)
+		// Running as root may bypass permission restrictions
+		if os.Getuid() == 0 {
+			t.Skip("Test running as root, skipping permission test")
+			return
+		}
 		if err == nil {
 			t.Error("Save should fail when directory is not writable")
+			return
 		}
 		if !strings.Contains(err.Error(), "failed to create file") {
 			t.Errorf("Expected error about creating file, got: %v", err)
 		}
-
-		// Restore permissions for cleanup
-		os.Chmod(configDir, 0755)
 	})
 }
 
@@ -231,6 +239,10 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 	})
 
 	t.Run("Get non-existent file", func(t *testing.T) {
+		// Create a fresh temporary directory for this test
+		freshTempDir, freshCleanup := setupTestDir(t)
+		defer freshCleanup()
+		
 		// Use a fresh storage instance with no saved data
 		newStorage := &DefaultServerStorage{}
 		
@@ -240,6 +252,9 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 		} else if !strings.Contains(err.Error(), "failed to open file") {
 			t.Errorf("Expected error about opening file, got: %v", err)
 		}
+		
+		// Suppress unused variable warning
+		_ = freshTempDir
 	})
 
 	t.Run("Get corrupted file", func(t *testing.T) {

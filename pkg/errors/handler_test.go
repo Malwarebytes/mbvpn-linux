@@ -60,14 +60,14 @@ func TestHandler_Handle_WithUserError(t *testing.T) {
 	handler := NewHandler()
 	userErr := NewUserError("User friendly message", errors.New("underlying"))
 
-	stdout, _ := captureOutput(func() {
+	_, stderr := captureOutput(func() {
 		shouldExit := handler.Handle(userErr)
 		if shouldExit {
 			t.Error("Handle should return false for user errors")
 		}
 	})
 
-	if !strings.Contains(stdout, "User friendly message") {
+	if !strings.Contains(stderr, "User friendly message") {
 		t.Error("Should display user-friendly message")
 	}
 }
@@ -92,15 +92,15 @@ func TestHandler_Handle_WithStandardErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stdout, _ := captureOutput(func() {
+			_, stderr := captureOutput(func() {
 				shouldExit := handler.Handle(tt.err)
 				if !shouldExit {
 					t.Error("Handle should return true for standard errors")
 				}
 			})
 
-			if !strings.Contains(strings.ToLower(stdout), strings.ToLower(tt.expected)) {
-				t.Errorf("Should display message containing '%s', got: %s", tt.expected, stdout)
+			if !strings.Contains(strings.ToLower(stderr), strings.ToLower(tt.expected)) {
+				t.Errorf("Should display message containing '%s', got: %s", tt.expected, stderr)
 			}
 		})
 	}
@@ -110,14 +110,14 @@ func TestHandler_Handle_WithGenericError(t *testing.T) {
 	handler := NewHandler()
 	genericErr := errors.New("some random error")
 
-	stdout, _ := captureOutput(func() {
+	_, stderr := captureOutput(func() {
 		shouldExit := handler.Handle(genericErr)
 		if !shouldExit {
 			t.Error("Handle should return true for generic errors")
 		}
 	})
 
-	if !strings.Contains(stdout, "unexpected error") {
+	if !strings.Contains(stderr, "unexpected error") {
 		t.Error("Should display unexpected error message for generic errors")
 	}
 }
@@ -136,15 +136,15 @@ func TestHandler_HandleWithMessage(t *testing.T) {
 		err := errors.New("test error")
 		customMessage := "Custom error message"
 
-		stdout, _ := captureOutput(func() {
+		_, stderr := captureOutput(func() {
 			shouldExit := handler.HandleWithMessage(err, customMessage)
 			if !shouldExit {
 				t.Error("HandleWithMessage should return true for non-nil error")
 			}
 		})
 
-		if !strings.Contains(stdout, customMessage) {
-			t.Errorf("Should display custom message '%s', got: %s", customMessage, stdout)
+		if !strings.Contains(stderr, customMessage) {
+				t.Errorf("Should display custom message '%s', got: %s", customMessage, stderr)
 		}
 	})
 }
@@ -158,11 +158,11 @@ func TestHandler_Fatal(t *testing.T) {
 	userErr := NewUserError("test message", nil)
 
 	// This should not cause exit since user errors return false from Handle
-	stdout, _ := captureOutput(func() {
+	_, stderr := captureOutput(func() {
 		handler.Fatal(userErr)
 	})
 
-	if !strings.Contains(stdout, "test message") {
+	if !strings.Contains(stderr, "test message") {
 		t.Error("Fatal should call Handle and display the message")
 	}
 }
@@ -292,7 +292,7 @@ func TestHandler_Integration(t *testing.T) {
 	networkErr := NewNetworkError("connect to database", baseErr)
 	wrappedErr := fmt.Errorf("service initialization failed: %w", networkErr)
 
-	stdout, _ := captureOutput(func() {
+	_, stderr := captureOutput(func() {
 		shouldExit := handler.Handle(wrappedErr)
 		if !shouldExit {
 			t.Error("Should return true for error chain ending in non-user error")
@@ -300,7 +300,7 @@ func TestHandler_Integration(t *testing.T) {
 	})
 
 	// Check that some error message is displayed (the exact message may vary due to formatting)
-	if len(stdout) == 0 {
+	if len(stderr) == 0 {
 		t.Error("Should display some error message")
 	}
 }
@@ -313,12 +313,12 @@ func TestPrintMsgIntegration(t *testing.T) {
 	// Test with a user error that should use MsgError type
 	userErr := NewUserError("Test user error", nil)
 	
-	stdout, _ := captureOutput(func() {
+	_, stderr := captureOutput(func() {
 		handler.Handle(userErr)
 	})
 	
 	// The output should contain the error message (exact formatting may vary)
-	if len(stdout) == 0 {
+	if len(stderr) == 0 {
 		t.Error("Should display some output for user error")
 	}
 }
