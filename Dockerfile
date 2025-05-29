@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y \
     iproute2 \
     iptables \
     net-tools \
-    dbus \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
@@ -19,6 +18,6 @@ RUN go mod download
 
 COPY . .
 
-RUN make build-st
+RUN make build-debug
 
-CMD ["sh", "-c", "dbus-uuidgen > /etc/machine-id && tail -f /dev/null"]
+CMD ["sh", "-c", "tail -f /dev/null"]
