@@ -15,7 +15,6 @@ import (
 type SessionManager interface {
 	LoginWithKey(string) error
 	LoginWithCode(string) error
-	login(string, bool) error
 	Logout() error
 	Active() bool
 }
