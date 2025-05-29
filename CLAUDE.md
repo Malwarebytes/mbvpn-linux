@@ -8,27 +8,29 @@ MBVPN is a command-line tool for Linux that interfaces with Malwarebytes VPN ser
 
 ## Build Commands
 
+**IMPORTANT**: All build, test, and Go commands must be run inside the Docker container using the docker-compose wrapper.
+
 ```bash
 # Build for staging environment
-make build-st
+docker-compose exec mbvpn make build-st
 
 # Build for production environment  
-make build-prod
+docker-compose exec mbvpn make build-prod
 
 # Build staging debug version
-make build-st-debug
+docker-compose exec mbvpn make build-st-debug
 
 # Build production debug version
-make build-prod-debug
+docker-compose exec mbvpn make build-prod-debug
 
 # Install the binary (production)
-make install
+docker-compose exec mbvpn make install
 
 # Install staging version
-make install-st
+docker-compose exec mbvpn make install-st
 
 # Clean build artifacts
-make clean
+docker-compose exec mbvpn make clean
 
 # Restart Docker environment
 make docker-restart
@@ -36,21 +38,23 @@ make docker-restart
 
 ## Testing Commands
 
+**IMPORTANT**: All test and Go commands must be run inside the Docker container using the docker-compose wrapper.
+
 ```bash
 # Run all tests
-make test
+docker-compose exec mbvpn make test
 
 # Run unit tests only
-make test-unit
+docker-compose exec mbvpn make test-unit
 
 # Run integration tests
-make test-integration
+docker-compose exec mbvpn make test-integration
 
 # Run specific integration test
-go test -tags=integration ./test/integration/ -run TestRegisterDevice
+docker-compose exec mbvpn go test -tags=integration ./test/integration/ -run TestRegisterDevice
 
 # Run e2e tests
-make test-e2e
+docker-compose exec mbvpn make test-e2e
 
 # Run installation tests
 make test-install
