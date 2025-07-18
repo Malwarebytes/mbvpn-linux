@@ -124,7 +124,7 @@ func TestDefaultServerStorage_Save(t *testing.T) {
 		// Verify file was created
 		home, _ := os.UserHomeDir()
 		filePath := filepath.Join(home, ".config", "mbvpn", "servers.json")
-		
+
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			t.Error("servers.json file should be created")
 		}
@@ -242,17 +242,17 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 		// Create a fresh temporary directory for this test
 		freshTempDir, freshCleanup := setupTestDir(t)
 		defer freshCleanup()
-		
+
 		// Use a fresh storage instance with no saved data
 		newStorage := &DefaultServerStorage{}
-		
+
 		_, err := newStorage.Get()
 		if err == nil {
 			t.Error("Get should fail when file doesn't exist")
 		} else if !strings.Contains(err.Error(), "failed to open file") {
 			t.Errorf("Expected error about opening file, got: %v", err)
 		}
-		
+
 		// Suppress unused variable warning
 		_ = freshTempDir
 	})
@@ -261,7 +261,7 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 		// Create corrupted JSON file
 		home := tempDir
 		filePath := filepath.Join(home, ".config", "mbvpn", "servers.json")
-		
+
 		err := os.WriteFile(filePath, []byte("invalid json {"), 0644)
 		if err != nil {
 			t.Fatalf("Failed to create corrupted file: %v", err)
@@ -435,16 +435,29 @@ func TestRandomInt(t *testing.T) {
 		}
 	})
 
+	t.Run("Max zero returns zero", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("randomInt(0) panicked: %v", r)
+			}
+		}()
+
+		result := randomInt(0)
+		if result != 0 {
+			t.Errorf("randomInt(0) should return 0, got %d", result)
+		}
+	})
+
 	t.Run("Random distribution", func(t *testing.T) {
 		// Test that randomInt produces different values over multiple calls
 		max := 10
 		results := make(map[int]bool)
-		
+
 		for i := 0; i < 100; i++ {
 			result := randomInt(max)
 			results[result] = true
 		}
-		
+
 		// We should see at least a few different values in 100 calls
 		if len(results) < 3 {
 			t.Errorf("Expected at least 3 different values in 100 calls, got %d", len(results))
@@ -455,7 +468,7 @@ func TestRandomInt(t *testing.T) {
 func TestServerStorage_Interface(t *testing.T) {
 	// Test that DefaultServerStorage implements ServerStorage interface
 	var storage ServerStorage = &DefaultServerStorage{}
-	
+
 	// Interface compliance test - this will fail to compile if interface is not implemented
 	_ = storage
 }
