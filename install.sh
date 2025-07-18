@@ -108,7 +108,7 @@ if [ -f "Makefile" ]; then
       echo -e "${YELLOW}Using pre-built mock binary for testing${NC}"
     else
       # Try to build using make
-      make GOFLAGS=-buildvcs=false build-prod || {
+      make GOFLAGS=-buildvcs=false build-release || {
         echo -e "${YELLOW}Build with make failed. Falling back to direct build...${NC}"
         if [ ! -f "./build/mbvpn" ]; then
           echo -e "${YELLOW}Creating mock binary for testing${NC}"
@@ -120,7 +120,7 @@ if [ -f "Makefile" ]; then
     fi
   else
     # Try to build using make
-    make GOFLAGS=-buildvcs=false build-prod || {
+    make GOFLAGS=-buildvcs=false build-release || {
       echo -e "${YELLOW}Build with make failed. Creating mock binary for testing${NC}"
       echo "#!/bin/sh" > ./build/mbvpn
       echo "echo 'MBVPN mock binary'" >> ./build/mbvpn
