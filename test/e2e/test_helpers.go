@@ -57,7 +57,7 @@ func setupTestHome(t *testing.T) string {
 // cleanupTestHome removes the temporary home directory
 func cleanupTestHome(t *testing.T, homeDir string) {
 	t.Helper()
-	
+
 	// Remove the temporary directory
 	err := os.RemoveAll(homeDir)
 	if err != nil {
@@ -68,9 +68,9 @@ func cleanupTestHome(t *testing.T, homeDir string) {
 // checkConfigFile checks if the config file was created and contains expected data
 func checkConfigFile(t *testing.T, homeDir string) bool {
 	t.Helper()
-	
+
 	configPath := filepath.Join(homeDir, ".config", "mbvpn", "config.yml")
-	
+
 	// Check if the file exists
 	_, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
@@ -78,13 +78,13 @@ func checkConfigFile(t *testing.T, homeDir string) bool {
 	} else if err != nil {
 		t.Fatalf("Error checking config file: %v", err)
 	}
-	
+
 	// Read the config file
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Error reading config file: %v", err)
 	}
-	
+
 	// Check if the file contains the installation_token
 	return strings.Contains(string(data), "installation_token")
 }
@@ -92,9 +92,9 @@ func checkConfigFile(t *testing.T, homeDir string) bool {
 // checkConfigDeleted checks if the config file was properly deleted after logout
 func checkConfigDeleted(t *testing.T, homeDir string) bool {
 	t.Helper()
-	
+
 	configPath := filepath.Join(homeDir, ".config", "mbvpn", "config.yml")
-	
+
 	// Check if the file exists
 	_, err := os.Stat(configPath)
 	return os.IsNotExist(err)
@@ -103,7 +103,7 @@ func checkConfigDeleted(t *testing.T, homeDir string) bool {
 // createMockSession creates a mock config file to simulate an active session
 func createMockSession(t *testing.T, homeDir string) {
 	t.Helper()
-	
+
 	configDir := filepath.Join(homeDir, ".config", "mbvpn")
 	configPath := filepath.Join(configDir, "config.yml")
 	mockConfig := `installation_token: mock-installation-token
@@ -128,11 +128,11 @@ func execCommand(t *testing.T, args []string, homeDir string) (string, error) {
 
 	// Create the command
 	cmd := exec.Command(binPath, args...)
-	
+
 	// Set environment variables for the command
-	cmd.Env = append(os.Environ(), 
+	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"MBVPN_HOLOCRON_URL_ST=https://idms-holocron-stage.mwbsys.com/graphql", // Use staging environment
+		"MBVPN_HOLOCRON_URL=https://idms-holocron-stage.mwbsys.com/graphql", // Use staging environment
 		"MBVPN_ENV=testing",
 	)
 
