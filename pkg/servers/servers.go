@@ -37,6 +37,10 @@ func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
 
 	path := filepath.Join(configDir, serversFile)
 
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create config directory '%s': %w", configDir, err)
+	}
+
 	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create file at path '%s': %w", path, err)
