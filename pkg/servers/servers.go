@@ -102,5 +102,8 @@ func (s *DefaultServerStorage) GetByServerName(name string) (*remote.Server, err
 }
 
 func randomInt(max int) int {
+	if max <= 0 {
+		return 0
+	}
 	return rand.Intn(max)
 }
