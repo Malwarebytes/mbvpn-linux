@@ -61,12 +61,12 @@ MBVPN can be built with different configurations using the following matrix:
 |-------------|------------|----------------------|--------------------------------------------------|
 | Staging     | Debug      | `make build-st-debug`  | Development and testing against staging           |
 | Staging     | Release    | `make build-st-release`| Pre-production testing against staging            |
-| Production  | Debug      | `make build-prod-debug`| Troubleshooting against production               |
-| Production  | Release    | `make build-prod-release`| Final production builds                          |
+| Production  | Debug      | `make build-debug`| Troubleshooting against production               |
+| Production  | Release    | `make build-release`| Final production builds                          |
 
 Default commands:
 - `make build-st`: Creates a staging release build
-- `make build-prod`: Creates a production release build
+- `make build-release`: Creates a production release build
 
 ### Build Types
 
@@ -90,7 +90,7 @@ go test -tags=integration ./test/integration/...
 go test -tags=integration ./test/integration/ -run TestRegisterDevice
 
 # Run e2e tests
-go test -tags=integration ./test/e2e/...
+go test -tags=e2e ./test/e2e/...
 ```
 
 For security reasons, the tests require a license key to be provided through an environment variable. Before running tests, you must set:
@@ -239,7 +239,7 @@ Debug builds (created with `make build-*-debug` commands) provide enhanced debug
 For troubleshooting complex issues, use debug builds with the debug flag:
 ```bash
 # Build a debug version first
-make build-prod-debug
+make build-debug
 
 # Run with debug flag
 mbvpn --debug <command>
