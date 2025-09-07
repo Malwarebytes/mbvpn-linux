@@ -38,10 +38,10 @@ build-release:
 build: build-release
 
 # Install targets
-install-debug: 
+install-debug:
 	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
 
-install-release: 
+install-release:
 	go install -gcflags="${RELEASE_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${RELEASE_LDFLAGS}" .
 
 # Default install target
@@ -81,9 +81,3 @@ test-install-opensuse:
 
 clean:
 	go clean
-
-docker-restart:
-	docker-compose down
-	docker-compose build
-	docker-compose up -d
-	docker-compose exec mbvpn bash

@@ -11,7 +11,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - .:/app
-      - /lib/modules:/lib/modules
+      # - /lib/modules:/lib/modules
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     stdin_open: true
