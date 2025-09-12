@@ -52,7 +52,7 @@ jobs:
 
   build-binaries:
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-22.04-2core]
     environment: ${{ github.event.inputs.is_production == 'true' && 'prod' || 'stage' }}
     strategy:
       matrix:
@@ -67,7 +67,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24'
 
       - name: Set version in environment
         run: |
