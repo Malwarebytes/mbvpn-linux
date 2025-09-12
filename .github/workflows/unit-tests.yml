@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Run Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-22.04-2core]
     steps:
       - uses: actions/checkout@v4
 
