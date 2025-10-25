@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/errors"
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
-	"github.com/Malwarebytes/mbvpn/pkg/servers"
-	"github.com/Malwarebytes/mbvpn/pkg/session"
-	"github.com/Malwarebytes/mbvpn/pkg/vpn"
-	"github.com/spf13/cobra"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/servers"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/session"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/vpn"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 // ErrorHandler is the central error handler for all commands
@@ -45,7 +45,7 @@ your privacy settings from the terminal. Requires a valid Malwarebytes license.`
 			log.SetLevel(log.InfoLevel)
 			config.DebugFlag = false
 		}
-		
+
 		// Initialize error handler with current debug setting
 		ErrorHandler = errors.NewHandler()
 	},
@@ -84,13 +84,13 @@ func HandleError(err error) {
 	if err == nil {
 		return
 	}
-	
+
 	if ErrorHandler == nil {
 		// Fallback if handler isn't initialized
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	if ErrorHandler.Handle(err) {
 		os.Exit(1)
 	}

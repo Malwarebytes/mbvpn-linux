@@ -4,17 +4,17 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"github.com/Malwarebytes/mbvpn/pkg/errors"
-	"github.com/Malwarebytes/mbvpn/pkg/session"
-	"github.com/Malwarebytes/mbvpn/pkg/vpn"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/session"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/vpn"
 	"github.com/spf13/cobra"
 )
 
 func NewConnectCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
 	return &cobra.Command{
-		Use:   "connect",
+		Use:     "connect",
 		Aliases: []string{"c"},
-		Short: "Connect to a VPN server",
+		Short:   "Connect to a VPN server",
 		Long: `Establishes a VPN connection to the specified server using WireGuard.
 Requires an active session (login first) and a valid server identifier.
 

@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/console"
-	"github.com/Malwarebytes/mbvpn/pkg/errors"
-	"github.com/Malwarebytes/mbvpn/pkg/output"
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
-	"github.com/Malwarebytes/mbvpn/pkg/servers"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/console"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/output"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/servers"
 	log "github.com/sirupsen/logrus"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -52,7 +52,7 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 	for _, country := range locations.Countries {
 		countryFlag := getCountryFlag(country.Code)
 		output.PrintMsg(fmt.Sprintf("%s %s, %s", countryFlag, country.Name, country.Code), output.MsgOutput)
-		
+
 		for i, city := range country.Cities {
 			if showCities {
 				isLastCity := i == len(country.Cities)-1
@@ -61,7 +61,7 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 					cityPrefix = "├─"
 				}
 				output.PrintMsg(fmt.Sprintf("  %s %s, %s", cityPrefix, city.Name, city.Code), output.MsgOutput)
-				
+
 				if showServers {
 					for j, s := range city.Servers {
 						isLastServer := j == len(city.Servers)-1
@@ -82,7 +82,7 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 func getCountryFlag(countryCode string) string {
 	// Convert country code to uppercase to ensure consistent handling
 	countryCode = strings.ToUpper(countryCode)
-	
+
 	// Map of country codes to flag emojis
 	countryFlags := map[string]string{
 		"AF": "🇦🇫", // Afghanistan
@@ -200,12 +200,12 @@ func getCountryFlag(countryCode string) string {
 		"VE": "🇻🇪", // Venezuela
 		"VN": "🇻🇳", // Vietnam
 	}
-	
+
 	// Return the flag emoji if it exists in the map, otherwise return the country code
 	if flag, ok := countryFlags[countryCode]; ok {
 		return flag
 	}
-	
+
 	// If no flag is found, create a Unicode flag from the country code
 	// This uses the Regional Indicator Symbol Letters which create flags when paired
 	// Each letter A-Z is represented by a Unicode code point from U+1F1E6 to U+1F1FF
@@ -215,7 +215,7 @@ func getCountryFlag(countryCode string) string {
 		second := 127462 + int(countryCode[1]) - 'A'
 		return string(rune(first)) + string(rune(second))
 	}
-	
+
 	return "🌍" // Default earth globe if conversion isn't possible
 }
 
@@ -229,7 +229,7 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 	if err != nil {
 		return errors.NewConfigError("get server by name", err)
 	}
-	
+
 	if server == nil {
 		return errors.NewUserError(fmt.Sprintf("Server %s not found", cfg), errors.ErrNotFound)
 	}
@@ -272,7 +272,7 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 	if err != nil {
 		return errors.NewVPNError("connect", err)
 	}
-	
+
 	output.PrintMsg("Connected.", output.MsgSuccess)
 	return nil
 }
@@ -283,7 +283,7 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 		if err != nil {
 			return errors.NewVPNError("get connected servers", err)
 		}
-		
+
 		for _, s := range servers {
 			err := vpn.Disconnect(s)
 			if err != nil {
@@ -292,20 +292,20 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 			}
 		}
 		return nil
-	} 
-	
+	}
+
 	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", cfg), output.MsgOutput)
 
 	cfgDir, err := ensureConfigDir()
 	if err != nil {
 		return errors.NewConfigError("ensure config directory", err)
 	}
-	
+
 	_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
 	if err != nil {
 		return errors.NewVPNError("disconnect", err)
 	}
-	
+
 	output.PrintMsg("Disconnected.", output.MsgSuccess)
 	return nil
 }
@@ -333,7 +333,7 @@ func (vpn *DefaultVpn) Status() error {
 	output.PrintMsg(fmt.Sprintf("VPN enabled: %t", network.VpnEnabled), output.MsgOutput)
 	output.PrintMsg(fmt.Sprintf("Country: %s", network.Geo.Country), output.MsgOutput)
 	output.PrintMsg(fmt.Sprintf("City: %s", network.Geo.City), output.MsgOutput)
-	
+
 	return nil
 }
 
@@ -379,7 +379,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 	return fullPath, nil
 }
 
-func getConnectedServers() ([]string, error) {	
+func getConnectedServers() ([]string, error) {
 	output, err := console.RunCmd(true, "wg", "show")
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute 'wg show': %w", err)

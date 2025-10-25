@@ -6,10 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/errors"
-	"github.com/Malwarebytes/mbvpn/pkg/output"
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/output"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 type SessionManager interface {
@@ -66,7 +66,7 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 		log.Errorf("Error registering the device: %v", err)
 		return errors.NewNetworkError("register device", err)
 	}
-	
+
 	err = sm.cfgProvider.StoreInstallationToken(installationToken)
 	if err != nil {
 		log.Errorf("Error storing installation token: %v", err)
@@ -80,13 +80,13 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 		log.Errorf("Error activating the device: %v", err)
 		return errors.NewNetworkError("activate device", err)
 	}
-	
+
 	if m.Status != remote.DeviceStatusLicensed && m.Status != remote.DeviceStatusTrial {
 		_ = sm.cfgProvider.DeleteConfig()
 		err := fmt.Errorf("device status: %s", m.Status)
 		return errors.NewAuthError("check license status", err)
 	}
-	
+
 	output.PrintMsg("Activated successfully!", output.MsgSuccess)
 	output.PrintMsg(fmt.Sprintf("License status: %s", m.Status), output.MsgSuccess)
 	return nil

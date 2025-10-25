@@ -1,4 +1,4 @@
-module github.com/Malwarebytes/mbvpn
+module github.com/Malwarebytes/mbvpn-linux
 
 go 1.23.4
 

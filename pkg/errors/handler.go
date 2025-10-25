@@ -1,12 +1,12 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
-	"github.com/Malwarebytes/mbvpn/pkg/output"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/output"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -4,7 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"github.com/Malwarebytes/mbvpn/pkg/session"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/session"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
    The command claims available seat of your Malwarebytes license.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			var err error
-			
+
 			key, _ := cmd.Flags().GetString("licenseKey")
 			if key == "" {
 				code, _ := cmd.Flags().GetString("mbCode")
@@ -24,7 +24,7 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 			} else {
 				err = sm.LoginWithKey(key)
 			}
-			
+
 			// Handle any errors that might have occurred
 			HandleError(err)
 		},

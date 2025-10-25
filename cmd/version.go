@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/spf13/cobra"
 )
 

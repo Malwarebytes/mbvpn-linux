@@ -10,7 +10,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/Malwarebytes/mbvpn/pkg/config"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -289,7 +289,7 @@ func (api *DefaultHolocron) GetVpnLocations() (*VpnLocations, error) {
                 ipv6Gateway
               }
             }
-          }    
+          }
         }
       }
     `,

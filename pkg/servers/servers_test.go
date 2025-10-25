@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 // setupTestDir creates a temporary directory for testing

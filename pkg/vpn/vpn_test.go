@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Malwarebytes/mbvpn/pkg/remote"
+	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 func TestGetCountryFlag(t *testing.T) {
@@ -178,7 +178,7 @@ func TestGetCountryFlag_AllMappedCountries(t *testing.T) {
 func TestEnsureConfigDir(t *testing.T) {
 	// Test creating config directory
 	tempDir := t.TempDir()
-	
+
 	// Set HOME to temp directory for this test
 	oldHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
@@ -227,7 +227,7 @@ func TestEnsureConfigDir_ErrorCase(t *testing.T) {
 
 func TestSaveWgConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Set HOME to temp directory for this test
 	oldHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
@@ -281,7 +281,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`
 
 func TestSaveWgConfig_PathTraversal(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Set HOME to temp directory for this test
 	oldHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
@@ -318,7 +318,7 @@ func TestSaveWgConfig_PathTraversal(t *testing.T) {
 
 func TestWriteConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Set HOME to temp directory for this test
 	oldHome := os.Getenv("HOME")
 	os.Setenv("HOME", tempDir)
@@ -326,9 +326,9 @@ func TestWriteConfig(t *testing.T) {
 
 	cfgName := "test-server"
 	server := remote.Server{
-		Hostname:    "vpn.example.com",
-		IPv4AddrIn:  "203.0.113.1",
-		PublicKey:   "test-server-public-key",
+		Hostname:   "vpn.example.com",
+		IPv4AddrIn: "203.0.113.1",
+		PublicKey:  "test-server-public-key",
 	}
 	privateKey := "test-private-key"
 	ipv4 := "10.0.0.1/32"
@@ -373,7 +373,7 @@ func TestWriteConfig(t *testing.T) {
 func TestGetConnectedServers_ParseOutput(t *testing.T) {
 	// This tests the parsing logic without actually running wg command
 	// We'll test the internal parsing logic by extracting it to a separate function
-	
+
 	// Test parsing wg show output
 	testOutput := `interface: wg0
   public key: test-public-key-1
@@ -421,7 +421,7 @@ peer: peer-public-key-2
 func TestGetConnectedServers_EmptyOutput(t *testing.T) {
 	// Test parsing empty wg show output
 	testOutput := ""
-	
+
 	interfaceCount := strings.Count(testOutput, "interface:")
 	if interfaceCount != 0 {
 		t.Errorf("Expected 0 interfaces for empty output, got %d", interfaceCount)
@@ -431,7 +431,7 @@ func TestGetConnectedServers_EmptyOutput(t *testing.T) {
 func TestGetConnectedServers_NoInterfaces(t *testing.T) {
 	// Test parsing wg show output with no interfaces
 	testOutput := `No interfaces configured`
-	
+
 	lines := strings.Split(testOutput, "\n")
 	interfaces := make([]string, 0)
 	for _, line := range lines {
@@ -537,9 +537,9 @@ func TestWriteConfig_Integration(t *testing.T) {
 	defer os.Setenv("HOME", oldHome)
 
 	server := remote.Server{
-		Hostname:    "test.example.com",
-		IPv4AddrIn:  "203.0.113.1",
-		PublicKey:   "server-public-key",
+		Hostname:   "test.example.com",
+		IPv4AddrIn: "203.0.113.1",
+		PublicKey:  "server-public-key",
 	}
 
 	configPath, err := writeConfig("test-server", server, "private-key", "10.0.0.1/32", "2001:db8::1/128")
@@ -576,7 +576,7 @@ func TestGetConnectedServers_EmptyInput(t *testing.T) {
 	if interfaceCount != 0 {
 		t.Errorf("Expected 0 interfaces for empty input, got %d", interfaceCount)
 	}
-	
+
 	// Test the interface parsing logic
 	interfaces := make([]string, 0)
 	for _, line := range lines {
@@ -585,7 +585,7 @@ func TestGetConnectedServers_EmptyInput(t *testing.T) {
 			interfaces = append(interfaces, interfaceName)
 		}
 	}
-	
+
 	if len(interfaces) != 0 {
 		t.Errorf("Expected no interfaces, got %v", interfaces)
 	}
@@ -594,14 +594,14 @@ func TestGetConnectedServers_EmptyInput(t *testing.T) {
 func TestGetConnectedServers_MultipleInterfaces(t *testing.T) {
 	// Test parsing multiple interfaces
 	testOutput := "interface: wg0\ninterface: wg1\ninterface: wg2"
-	
+
 	lines := strings.Split(testOutput, "\n")
 	interfaceCount := strings.Count(testOutput, "interface:")
-	
+
 	if interfaceCount != 3 {
 		t.Errorf("Expected 3 interfaces, got %d", interfaceCount)
 	}
-	
+
 	// Test interface extraction
 	interfaces := make([]string, interfaceCount)
 	i := 0
@@ -614,7 +614,7 @@ func TestGetConnectedServers_MultipleInterfaces(t *testing.T) {
 			}
 		}
 	}
-	
+
 	expectedInterfaces := []string{"wg0", "wg1", "wg2"}
 	for idx, expected := range expectedInterfaces {
 		if idx >= len(interfaces) || interfaces[idx] != expected {
@@ -629,16 +629,16 @@ func TestGenerateKeys_ErrorPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generateKeys should succeed: %v", err)
 	}
-	
+
 	// Test that the keys are different (coverage for key generation logic)
 	if publicKey.String() == preSharedKey.String() {
 		t.Error("Public key and pre-shared key should be different")
 	}
-	
+
 	if publicKey.String() == privateKey.String() {
 		t.Error("Public key and private key should be different")
 	}
-	
+
 	if preSharedKey.String() == privateKey.String() {
 		t.Error("Pre-shared key and private key should be different")
 	}
