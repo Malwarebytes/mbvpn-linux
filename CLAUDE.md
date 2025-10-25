@@ -52,16 +52,6 @@ docker-compose run --rm mbvpn go test -tags=integration ./test/integration/ -run
 
 # Run e2e tests
 docker-compose run --rm mbvpn make test-e2e
-
-# Run installation tests
-make test-install
-
-# Run installation tests for specific distros
-make test-install-ubuntu
-make test-install-fedora
-make test-install-centos
-make test-install-arch
-make test-install-opensuse
 ```
 
 ## Core Architecture

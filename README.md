@@ -12,46 +12,30 @@ The tool is in experimental mode, so it is important to know which parts of the 
 
 ## Installation
 
-### Option 1: Recommended Installation
+### Prerequisites
 
-The recommended installation method is to clone the repository and run the installation script:
+WireGuard tools are required for MBVPN to function properly. Install them using your distribution's package manager:
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Malwarebytes/mbvpn.git
-   cd mbvpn
-   ```
+- **Ubuntu/Debian**: `sudo apt install wireguard wireguard-tools`
+- **Fedora**: `sudo dnf install wireguard-tools`
+- **CentOS/RHEL**: `sudo yum install wireguard-tools`
+- **Arch Linux**: `sudo pacman -S wireguard-tools`
+- **openSUSE**: `sudo zypper install wireguard-tools`
 
-2. Run the installation script:
-   ```bash
-   ./install.sh
-   ```
+### Installation via Go Package Manager (Recommended)
 
-The script will:
-1. Check system requirements
-2. Install WireGuard dependencies if needed
-3. Build MBVPN from source
-4. Install the binary to `/usr/local/bin/mbvpn`
+Install MBVPN directly using Go's package manager:
 
-> Note: The script requires sudo privileges to install dependencies and place the binary in system directories.
+```bash
+go install github.com/Malwarebytes/mbvpn@latest
+```
 
-### Option 2: From Releases
+> **Note**: Ensure that your `$GOPATH/bin` (typically `~/go/bin`) is in your `$PATH` to run the `mbvpn` command.
 
-1. Download and unpack the latest release for your architecture from the "Releases" page.
-2. Update the `$PATH` variable to have access to the unpacked binary.
+### Alternative: Download from Releases
 
-#### Prerequisites for Manual Installation
-
-WireGuard tools are required for MBVPN to function properly. If installing manually, you can install them with your package manager:
-
-- For Ubuntu/Debian: `sudo apt install wireguard wireguard-tools`
-- For Fedora: `sudo dnf install wireguard-tools`
-- For CentOS/RHEL: `sudo yum install wireguard-tools`
-- For Arch Linux: `sudo pacman -S wireguard-tools`
-- For openSUSE: `sudo zypper install wireguard-tools`
-
-1. Download and unpack the latest release for your architecture from the "Releases" page.
-2. Update the `$PATH` variable to have access to the unpacked binary.
+1. Download the latest release for your architecture from the [Releases](https://github.com/Malwarebytes/mbvpn/releases) page
+2. Extract the binary and place it in a directory in your `$PATH` (e.g., `/usr/local/bin`)
 
 ## Build Configuration
 
@@ -100,30 +84,6 @@ export MBVPN_TEST_LICENSE_KEY="your-license-key-here"
 ```
 
 Tests will fail if this environment variable is not set.
-
-### Installation Script Testing
-
-The installation script tests verify proper functioning on multiple Linux distributions using Docker containers:
-
-```bash
-# Test on all supported Linux distributions
-make test-install
-
-# Test on a specific distribution
-make test-install-ubuntu
-make test-install-fedora
-make test-install-centos
-make test-install-arch
-make test-install-opensuse
-```
-
-Each test:
-1. Builds a Docker container for the target distribution
-2. Tests the installation script inside the container
-3. Verifies WireGuard tools installation
-4. Confirms proper binary installation
-
-> Note: Running installation tests requires Docker to be installed on your system.
 
 ## Usage
 

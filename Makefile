@@ -60,24 +60,5 @@ test-integration: build-release
 test-e2e: build-release
 	MBVPN_TEST_LICENSE_KEY=${MBVPN_TEST_LICENSE_KEY} go test -tags=e2e -v ./test/e2e/...
 
-# Installation script tests
-test-install:
-	./test/install/run_tests.sh
-
-test-install-ubuntu:
-	./test/install/run_tests.sh -d ubuntu
-
-test-install-fedora:
-	./test/install/run_tests.sh -d fedora
-
-test-install-centos:
-	./test/install/run_tests.sh -d centos
-
-test-install-arch:
-	./test/install/run_tests.sh -d arch
-
-test-install-opensuse:
-	./test/install/run_tests.sh -d opensuse
-
 clean:
 	go clean
