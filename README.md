@@ -1,5 +1,9 @@
 # Malwarebytes VPN for Linux
 
+[![Version](https://img.shields.io/github/v/release/Malwarebytes/mbvpn?style=flat-square)](https://github.com/Malwarebytes/mbvpn/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Malwarebytes/mbvpn)](https://goreportcard.com/report/github.com/Malwarebytes/mbvpn)
+[![License](https://img.shields.io/github/license/Malwarebytes/mbvpn?style=flat-square)](LICENSE)
+
 ## IMPORTANT
 
 The tool is in experimental mode, so it is important to know which parts of the Linux system are affected:
