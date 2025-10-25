@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/github/v/release/Malwarebytes/mbvpn?style=flat-square)](https://github.com/Malwarebytes/mbvpn/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Malwarebytes/mbvpn)](https://goreportcard.com/report/github.com/Malwarebytes/mbvpn)
-[![License](https://img.shields.io/github/license/Malwarebytes/mbvpn?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/github/license/Malwarebytes/mbvpn?style=flat-square)](LICENSE.md)
 
 ## IMPORTANT
 
@@ -236,3 +236,7 @@ If that doesn't help, manually disconnect using WireGuard directly:
 2. Disconnect: `sudo wg-quick down <interface_name>`
 
 > After connecting/disconnecting, give the tool a few seconds to establish or terminate the connection.
+
+---
+
+This repository is provided as-is and isn't bound to Malwarebytes' SLA.
