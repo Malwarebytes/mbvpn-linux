@@ -28,6 +28,7 @@ RELEASE_LDFLAGS=-X '${GO_PKG}/pkg/config.BuildType=release'
 RELEASE_GCFLAGS=-trimpath
 
 # Build targets
+.PHONY: build build-debug build-release
 build-debug:
 	go build ${GOFLAGS} -o ${BINARY_NAME} -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${DEBUG_LDFLAGS}"
 
@@ -38,6 +39,7 @@ build-release:
 build: build-release
 
 # Install targets
+.PHONY: install install-debug install-release
 install-debug:
 	go install -gcflags="${DEBUG_GCFLAGS}" -ldflags "${COMMON_LDFLAGS} ${ENV_LDFLAGS} ${DEBUG_LDFLAGS}" .
 
@@ -48,6 +50,7 @@ install-release:
 install: install-release
 
 # Test targets
+.PHONY: test test-unit test-integration test-e2e clean
 test:
 	go test ./...
 
