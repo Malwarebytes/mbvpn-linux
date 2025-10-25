@@ -15,7 +15,7 @@ import (
 
 const (
 	invalidLicenseKey = "AAAAA-BBBBB-CCCCC-DDDDD"
-	invalidMbCode     = "MB-12345" // Invalid MB code
+	invalidMbCode     = "MB-12345"
 )
 
 // getValidLicenseKey returns license key from environment variable
