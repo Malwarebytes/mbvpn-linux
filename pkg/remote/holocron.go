@@ -358,6 +358,7 @@ func (api *DefaultHolocron) doRequest(installationToken string, body *map[string
 	}
 
 	request.Header.Set("X-Device-Bearer", fmt.Sprintf("%s|%s", installationToken, machineId))
+	request.Header.Set("User-Agent", config.GetUserAgent(productVersion))
 
 	reqDump, err := httputil.DumpRequest(request, true)
 	if err != nil {
