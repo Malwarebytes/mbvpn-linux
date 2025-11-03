@@ -1,7 +1,7 @@
 -include .env
 
 BINARY_NAME=mbvpn
-GO_PKG=github.com/Malwarebytes/mbvpn-linux
+GO_PKG=github.com/malwarebytes/mbvpn-linux
 GOFLAGS ?=
 
 # Version information

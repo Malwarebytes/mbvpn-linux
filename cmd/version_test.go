@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 )
 
 func TestNewVersionCommand(t *testing.T) {

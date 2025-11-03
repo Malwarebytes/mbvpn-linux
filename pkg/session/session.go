@@ -6,10 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/output"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/malwarebytes/mbvpn-linux/pkg/output"
+	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 type SessionManager interface {

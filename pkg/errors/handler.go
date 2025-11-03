@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/output"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/output"
 	log "github.com/sirupsen/logrus"
 )
 

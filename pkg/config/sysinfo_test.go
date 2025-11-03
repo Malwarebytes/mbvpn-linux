@@ -57,8 +57,8 @@ func TestGetUserAgent(t *testing.T) {
 		t.Errorf("Expected user agent to start with 'Malwarebytes Privacy/%s', got: %s", productVersion, userAgent)
 	}
 
-	if !strings.Contains(userAgent, "github.com/Malwarebytes/mbvpn-linux") {
-		t.Error("Expected user agent to contain 'github.com/Malwarebytes/mbvpn-linux'")
+	if !strings.Contains(userAgent, "github.com/malwarebytes/mbvpn-linux") {
+		t.Error("Expected user agent to contain 'github.com/malwarebytes/mbvpn-linux'")
 	}
 
 	if !strings.Contains(userAgent, "Build: "+productVersion) {
@@ -96,8 +96,8 @@ func TestGetUserAgentFormat(t *testing.T) {
 	}
 
 	// Check first detail part
-	if detailParts[0] != "github.com/Malwarebytes/mbvpn-linux" {
-		t.Errorf("Expected first detail 'github.com/Malwarebytes/mbvpn-linux', got: %s", detailParts[0])
+	if detailParts[0] != "github.com/malwarebytes/mbvpn-linux" {
+		t.Errorf("Expected first detail 'github.com/malwarebytes/mbvpn-linux', got: %s", detailParts[0])
 	}
 
 	// Check second detail part

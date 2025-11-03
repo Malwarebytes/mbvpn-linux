@@ -4,7 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"github.com/Malwarebytes/mbvpn-linux/pkg/session"
+	"github.com/malwarebytes/mbvpn-linux/pkg/session"
 	"github.com/spf13/cobra"
 )
 

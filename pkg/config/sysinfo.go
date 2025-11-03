@@ -50,7 +50,7 @@ func GetArchitecture() string {
 }
 
 // GetUserAgent constructs the user agent string according to the template:
-// Malwarebytes Privacy/$VERSION_NAME (github.com/Malwarebytes/mbvpn-linux; Build: $VERSION_NAME; $LINUX_DISTRO_NAME $KERNEL_VERSION $ARCH)
+// Malwarebytes Privacy/$VERSION_NAME (github.com/malwarebytes/mbvpn-linux; Build: $VERSION_NAME; $LINUX_DISTRO_NAME $KERNEL_VERSION $ARCH)
 func GetUserAgent(productVersion string) string {
 	userAgentOnce.Do(func() {
 		distro := GetDistroName()
@@ -58,7 +58,7 @@ func GetUserAgent(productVersion string) string {
 		arch := GetArchitecture()
 
 		cachedUserAgent = fmt.Sprintf(
-			"Malwarebytes Privacy/%s (github.com/Malwarebytes/mbvpn-linux; Build: %s; %s %s %s)",
+			"Malwarebytes Privacy/%s (github.com/malwarebytes/mbvpn-linux; Build: %s; %s %s %s)",
 			productVersion,
 			productVersion,
 			distro,

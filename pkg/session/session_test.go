@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
 )
 
 // TestSessionManagerInterface verifies that DefaultSessionManager implements the SessionManager interface

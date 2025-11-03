@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 

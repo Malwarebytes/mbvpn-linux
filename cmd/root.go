@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/servers"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/session"
-	"github.com/Malwarebytes/mbvpn-linux/pkg/vpn"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
+	"github.com/malwarebytes/mbvpn-linux/pkg/servers"
+	"github.com/malwarebytes/mbvpn-linux/pkg/session"
+	"github.com/malwarebytes/mbvpn-linux/pkg/vpn"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

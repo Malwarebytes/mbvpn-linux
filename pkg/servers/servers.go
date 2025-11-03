@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/remote"
+	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 const (

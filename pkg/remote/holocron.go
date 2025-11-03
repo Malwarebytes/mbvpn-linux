@@ -10,7 +10,7 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 

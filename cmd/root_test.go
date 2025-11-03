@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/Malwarebytes/mbvpn-linux/pkg/errors"
+	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
