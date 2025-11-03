@@ -1,11 +1,9 @@
 # Security Policy
 
-(If applicable)
-<!--
+
 ## Supported Versions
 
 The latest version from the `Releases` tab is supported. Previous ones are considered unsupported.
--->
 
 ## Reporting a Vulnerability
 
