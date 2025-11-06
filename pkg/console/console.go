@@ -12,14 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// allowedCommands defines the commands that can be executed
+// allowedCommands defines the commands that can be executed with sudo
 var allowedCommands = map[string]bool{
-	"wg":       true,
-	"wg-quick": true,
-}
-
-// allowedSudoCommands defines commands that can run with sudo
-var allowedSudoCommands = map[string]bool{
 	"wg":       true,
 	"wg-quick": true,
 }
@@ -28,7 +22,7 @@ var allowedSudoCommands = map[string]bool{
 const commandTimeout = 30 * time.Second
 
 // validateCommand checks if a command is allowed to be executed
-func validateCommand(sudo bool, command string) error {
+func validateCommand(command string) error {
 	if command == "" {
 		return fmt.Errorf("command cannot be empty")
 	}
@@ -39,11 +33,6 @@ func validateCommand(sudo bool, command string) error {
 	// Check if command is in the allowed list
 	if !allowedCommands[cmdName] {
 		return fmt.Errorf("command '%s' is not allowed", cmdName)
-	}
-
-	// Check if command is allowed with sudo
-	if sudo && !allowedSudoCommands[cmdName] {
-		return fmt.Errorf("command '%s' is not allowed to run with sudo", cmdName)
 	}
 
 	return nil
@@ -96,11 +85,12 @@ func validateArgs(command string, args []string) error {
 	return nil
 }
 
-// RunCmd executes a terminal command, optionally with sudo.
+// RunCmd executes a terminal command with sudo.
 // Only allows pre-approved commands (wg, wg-quick) with validated arguments.
-func RunCmd(sudo bool, command string, args ...string) (string, error) {
+// All WireGuard operations require root privileges.
+func RunCmd(command string, args ...string) (string, error) {
 	// Validate command is allowed
-	if err := validateCommand(sudo, command); err != nil {
+	if err := validateCommand(command); err != nil {
 		log.Warnf("Command validation failed: %v", err)
 		return "", err
 	}
@@ -111,7 +101,12 @@ func RunCmd(sudo bool, command string, args ...string) (string, error) {
 		return "", err
 	}
 
-	var cmd *exec.Cmd
+	// Check if sudo is available
+	_, err := exec.LookPath("sudo")
+	if err != nil {
+		return "", fmt.Errorf("sudo is required but not available: %w", err)
+	}
+
 	var stdout strings.Builder
 	var stderr strings.Builder
 
@@ -119,25 +114,14 @@ func RunCmd(sudo bool, command string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 	defer cancel()
 
-	if sudo {
-		// Check if sudo is available
-		_, err := exec.LookPath("sudo")
-		if err != nil {
-			return "", fmt.Errorf("sudo is required but not available: %w", err)
-		}
-
-		// Log privileged command execution for audit purposes
-		log.Infof("Executing privileged command: %s %v", command, args)
-		cmd = exec.CommandContext(ctx, "sudo", append([]string{command}, args...)...)
-	} else {
-		log.Debugf("Executing command: %s %v", command, args)
-		cmd = exec.CommandContext(ctx, command, args...)
-	}
+	// Log privileged command execution for audit purposes
+	log.Infof("Executing privileged command: %s %v", command, args)
+	cmd := exec.CommandContext(ctx, "sudo", append([]string{command}, args...)...)
 
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		// Log detailed error for debugging but return sanitized error to caller
 		log.Debugf("Command '%s %v' failed - stderr: %v, stdout: %v", command, args, stderr.String(), stdout.String())
