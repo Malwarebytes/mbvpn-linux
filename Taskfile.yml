@@ -32,7 +32,7 @@ vars:
 
   # Release flags
   RELEASE_LDFLAGS: -X '{{.GO_PKG}}/pkg/config.BuildType=release'
-  RELEASE_GCFLAGS: -trimpath
+  RELEASE_BUILDFLAGS: -trimpath
 
 tasks:
   build:
@@ -54,8 +54,8 @@ tasks:
     cmds:
       - >-
         go build {{.GOFLAGS}}
+        {{.RELEASE_BUILDFLAGS}}
         -o {{.BINARY_NAME}}
-        -gcflags="{{.RELEASE_GCFLAGS}}"
         -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
 
   install:
@@ -77,7 +77,7 @@ tasks:
     cmds:
       - >-
         go install
-        -gcflags="{{.RELEASE_GCFLAGS}}"
+        {{.RELEASE_BUILDFLAGS}}
         -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
         .
 
