@@ -268,7 +268,7 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 	}
 
 	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
-	_, err = console.RunCmd(true, "wg-quick", "up", cfgPath)
+	err = console.WgUp(cfgPath)
 	if err != nil {
 		return errors.NewVPNError("connect", err)
 	}
@@ -301,7 +301,7 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 		return errors.NewConfigError("ensure config directory", err)
 	}
 
-	_, err = console.RunCmd(true, "wg-quick", "down", filepath.Join(cfgDir, cfg+".conf"))
+	err = console.WgDown(filepath.Join(cfgDir, cfg+".conf"))
 	if err != nil {
 		return errors.NewVPNError("disconnect", err)
 	}
@@ -380,7 +380,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 }
 
 func getConnectedServers() ([]string, error) {
-	output, err := console.RunCmd(true, "wg", "show")
+	output, err := console.WgShow()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute 'wg show': %w", err)
 	}
