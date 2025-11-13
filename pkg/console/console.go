@@ -103,8 +103,7 @@ func WgDown(cfgPath string) error {
 }
 
 func sanitizeWgConfigPath(cfgPath string) (string, error) {
-	// Clean the path (removes .., redundant separators, etc.)
-	cleanPath := filepath.Clean(cfgPath)
+	cleanPath := cfgPath
 
 	// Expand home directory if present
 	home, err := os.UserHomeDir()
