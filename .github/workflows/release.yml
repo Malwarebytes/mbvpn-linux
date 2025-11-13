@@ -86,7 +86,7 @@ jobs:
         env:
           MBVPN_HOLOCRON_URL: ${{ vars.MBVPN_HOLOCRON_URL }}
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} make build-release
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} task build-release
           mv mbvpn ${{ env.BINARY_NAME }}
 
       - name: Upload Release Asset
