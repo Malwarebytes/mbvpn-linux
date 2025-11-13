@@ -14,7 +14,7 @@ import (
 )
 
 // setupTestDir creates a temporary directory and returns a directory provider for testing
-func setupTestDir(t *testing.T) (*config.TestDirectoryProvider, func()) {
+func setupTestDir(t *testing.T) (config.DirectoryProvider, func()) {
 	tempDir := t.TempDir()
 	configDir := filepath.Join(tempDir, "mbvpn")
 	err := os.MkdirAll(configDir, 0755)
@@ -22,7 +22,7 @@ func setupTestDir(t *testing.T) (*config.TestDirectoryProvider, func()) {
 		t.Fatalf("Failed to create test config directory: %v", err)
 	}
 
-	dirProvider := config.NewTestDirectoryProvider(tempDir).(*config.TestDirectoryProvider)
+	dirProvider := config.NewDirectoryProvider(tempDir)
 
 	return dirProvider, func() {
 		// No cleanup needed as t.TempDir() handles it
@@ -501,7 +501,8 @@ func TestRandomInt(t *testing.T) {
 
 func TestServerStorage_Interface(t *testing.T) {
 	// Test that DefaultServerStorage implements ServerStorage interface
-	dirProvider := config.NewDefaultDirectoryProvider()
+	tempDir := t.TempDir()
+	dirProvider := config.NewDirectoryProvider(tempDir)
 	var storage ServerStorage = NewDefaultServerStorage(dirProvider)
 
 	// Interface compliance test - this will fail to compile if interface is not implemented
@@ -554,7 +555,7 @@ func BenchmarkDefaultServerStorage_Save(b *testing.B) {
 	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	dirProvider := config.NewDirectoryProvider(tempDir)
 	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 
@@ -569,7 +570,7 @@ func BenchmarkDefaultServerStorage_Get(b *testing.B) {
 	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	dirProvider := config.NewDirectoryProvider(tempDir)
 	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 	storage.Save(locations) // Setup
@@ -585,7 +586,7 @@ func BenchmarkDefaultServerStorage_GetByServerName(b *testing.B) {
 	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	dirProvider := config.NewDirectoryProvider(tempDir)
 	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 	storage.Save(locations) // Setup

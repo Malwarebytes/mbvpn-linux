@@ -11,14 +11,14 @@ import (
 )
 
 // Helper function to set up test directory
-func setupTestDir(t *testing.T) (*config.TestDirectoryProvider, func()) {
+func setupTestDir(t *testing.T) (config.DirectoryProvider, func()) {
 	tempDir := t.TempDir()
 	configDir := filepath.Join(tempDir, "mbvpn")
 	serversDir := filepath.Join(configDir, "servers")
 	if err := os.MkdirAll(serversDir, 0755); err != nil {
 		t.Fatalf("Failed to create test directories: %v", err)
 	}
-	dirProvider := config.NewTestDirectoryProvider(tempDir).(*config.TestDirectoryProvider)
+	dirProvider := config.NewDirectoryProvider(tempDir)
 	return dirProvider, func() {}
 }
 

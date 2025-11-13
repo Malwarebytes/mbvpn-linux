@@ -7,7 +7,9 @@ import (
 )
 
 func TestNewConfigFileMachineIdProvider(t *testing.T) {
-	dirProvider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	dirProvider := NewDirectoryProvider(tempDir)
 	provider := NewConfigFileMachineIdProvider(dirProvider)
 	if provider == nil {
 		t.Fatal("Expected non-nil provider")
@@ -23,7 +25,7 @@ func TestConfigFileMachineIdProviderGet(t *testing.T) {
 	// Test that the provider can successfully generate and retrieve a machine ID
 	// Now uses a temporary directory instead of the actual config directory
 	tempDir := t.TempDir()
-	dirProvider := NewTestDirectoryProvider(tempDir)
+	dirProvider := NewDirectoryProvider(tempDir)
 	provider := NewConfigFileMachineIdProvider(dirProvider)
 
 	// First call - should create new ID

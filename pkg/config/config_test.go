@@ -59,7 +59,7 @@ func setupTestConfig(t *testing.T) (*YamlConfigProvider, func()) {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
-	dirProvider := NewTestDirectoryProvider(tempDir)
+	dirProvider := NewDirectoryProvider(tempDir)
 	provider := NewYamlConfigProvider(dirProvider).(*YamlConfigProvider)
 
 	// Return a cleanup function
@@ -69,7 +69,9 @@ func setupTestConfig(t *testing.T) (*YamlConfigProvider, func()) {
 }
 
 func TestNewYamlConfigProvider(t *testing.T) {
-	dirProvider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	dirProvider := NewDirectoryProvider(tempDir)
 	provider := NewYamlConfigProvider(dirProvider)
 
 	if provider == nil {

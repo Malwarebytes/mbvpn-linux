@@ -60,7 +60,11 @@ func Execute() {
 
 func init() {
 	// Create directory provider (single source of truth for all directory paths)
-	dirProvider := config.NewDefaultDirectoryProvider()
+	dirProvider, err := config.NewDefaultDirectoryProvider()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to initialize configuration directory: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Wire up all dependencies with directory provider
 	cp := config.NewYamlConfigProvider(dirProvider)

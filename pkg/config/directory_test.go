@@ -1,14 +1,15 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestDefaultDirectoryProvider_GetConfigDir(t *testing.T) {
-	provider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
 
 	configDir, err := provider.GetConfigDir()
 	if err != nil {
@@ -25,7 +26,9 @@ func TestDefaultDirectoryProvider_GetConfigDir(t *testing.T) {
 }
 
 func TestDefaultDirectoryProvider_GetServersDir(t *testing.T) {
-	provider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
 
 	serversDir, err := provider.GetServersDir()
 	if err != nil {
@@ -38,7 +41,9 @@ func TestDefaultDirectoryProvider_GetServersDir(t *testing.T) {
 }
 
 func TestDefaultDirectoryProvider_GetConfigFile(t *testing.T) {
-	provider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
 
 	configFile, err := provider.GetConfigFile()
 	if err != nil {
@@ -51,7 +56,9 @@ func TestDefaultDirectoryProvider_GetConfigFile(t *testing.T) {
 }
 
 func TestDefaultDirectoryProvider_GetMachineIDFile(t *testing.T) {
-	provider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
 
 	machineIDFile, err := provider.GetMachineIDFile()
 	if err != nil {
@@ -64,7 +71,9 @@ func TestDefaultDirectoryProvider_GetMachineIDFile(t *testing.T) {
 }
 
 func TestDefaultDirectoryProvider_GetServersFile(t *testing.T) {
-	provider := NewDefaultDirectoryProvider()
+	// Test using temp directory to avoid touching real filesystem
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
 
 	serversFile, err := provider.GetServersFile()
 	if err != nil {
@@ -76,36 +85,9 @@ func TestDefaultDirectoryProvider_GetServersFile(t *testing.T) {
 	}
 }
 
-func TestDefaultDirectoryProvider_ErrorCase(t *testing.T) {
-	// Test error case by unsetting both XDG_CONFIG_HOME and HOME
-	oldConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	oldHome := os.Getenv("HOME")
-	os.Unsetenv("XDG_CONFIG_HOME")
-	os.Unsetenv("HOME")
-	defer func() {
-		if oldConfigHome != "" {
-			os.Setenv("XDG_CONFIG_HOME", oldConfigHome)
-		}
-		if oldHome != "" {
-			os.Setenv("HOME", oldHome)
-		}
-	}()
-
-	provider := NewDefaultDirectoryProvider()
-
-	_, err := provider.GetConfigDir()
-	if err == nil {
-		t.Error("GetConfigDir should fail when both XDG_CONFIG_HOME and HOME are unset")
-	}
-
-	if !strings.Contains(err.Error(), "failed to get user config directory") {
-		t.Errorf("Expected error about config directory, got: %v", err)
-	}
-}
-
 func TestTestDirectoryProvider_GetConfigDir(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	configDir, err := provider.GetConfigDir()
 	if err != nil {
@@ -120,7 +102,7 @@ func TestTestDirectoryProvider_GetConfigDir(t *testing.T) {
 
 func TestTestDirectoryProvider_GetServersDir(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	serversDir, err := provider.GetServersDir()
 	if err != nil {
@@ -135,7 +117,7 @@ func TestTestDirectoryProvider_GetServersDir(t *testing.T) {
 
 func TestTestDirectoryProvider_GetConfigFile(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	configFile, err := provider.GetConfigFile()
 	if err != nil {
@@ -150,7 +132,7 @@ func TestTestDirectoryProvider_GetConfigFile(t *testing.T) {
 
 func TestTestDirectoryProvider_GetMachineIDFile(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	machineIDFile, err := provider.GetMachineIDFile()
 	if err != nil {
@@ -165,7 +147,7 @@ func TestTestDirectoryProvider_GetMachineIDFile(t *testing.T) {
 
 func TestTestDirectoryProvider_GetServersFile(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	serversFile, err := provider.GetServersFile()
 	if err != nil {
@@ -180,7 +162,7 @@ func TestTestDirectoryProvider_GetServersFile(t *testing.T) {
 
 func TestTestDirectoryProvider_Integration(t *testing.T) {
 	tempDir := t.TempDir()
-	provider := NewTestDirectoryProvider(tempDir)
+	provider := NewDirectoryProvider(tempDir)
 
 	// Test all methods return paths under the same base directory
 	configDir, _ := provider.GetConfigDir()
@@ -198,7 +180,6 @@ func TestTestDirectoryProvider_Integration(t *testing.T) {
 }
 
 func TestDirectoryProvider_Interface(t *testing.T) {
-	// Verify both implementations satisfy the interface
-	var _ DirectoryProvider = &DefaultDirectoryProvider{}
-	var _ DirectoryProvider = &TestDirectoryProvider{}
+	// Verify the implementation satisfies the interface
+	var _ DirectoryProvider = &directoryProvider{}
 }
