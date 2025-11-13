@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,8 +59,8 @@ func WgShow() (string, error) {
 	return stdout.String(), nil
 }
 
-func WgUp(cfgPath string) error {
-	cleanedPath, err := sanitizeWgConfigPath(cfgPath)
+func WgUp(cfgPath string, dirProvider config.DirectoryProvider) error {
+	cleanedPath, err := sanitizeWgConfigPath(cfgPath, dirProvider)
 	if err != nil {
 		return fmt.Errorf("invalid WireGuard config path: %w", err)
 	}
@@ -80,8 +81,8 @@ func WgUp(cfgPath string) error {
 	return nil
 }
 
-func WgDown(cfgPath string) error {
-	cleanedPath, err := sanitizeWgConfigPath(cfgPath)
+func WgDown(cfgPath string, dirProvider config.DirectoryProvider) error {
+	cleanedPath, err := sanitizeWgConfigPath(cfgPath, dirProvider)
 	if err != nil {
 		return fmt.Errorf("invalid WireGuard config path: %w", err)
 	}
@@ -102,7 +103,7 @@ func WgDown(cfgPath string) error {
 	return nil
 }
 
-func sanitizeWgConfigPath(cfgPath string) (string, error) {
+func sanitizeWgConfigPath(cfgPath string, dirProvider config.DirectoryProvider) (string, error) {
 	cleanPath := cfgPath
 
 	// Expand home directory if present
@@ -130,7 +131,10 @@ func sanitizeWgConfigPath(cfgPath string) (string, error) {
 	}
 
 	// Ensure it's within the expected config directory
-	expectedBase := filepath.Join(home, ".config", "mbvpn", "servers")
+	expectedBase, err := dirProvider.GetServersDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get servers directory: %w", err)
+	}
 	if !strings.HasPrefix(absPath, expectedBase) {
 		return "", fmt.Errorf("config file must be within %s", expectedBase)
 	}

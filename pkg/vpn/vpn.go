@@ -27,13 +27,15 @@ type DefaultVpn struct {
 	cfgProvider   config.ConfigProvider
 	holocron      remote.Holocron
 	serverStorage servers.ServerStorage
+	dirProvider   config.DirectoryProvider
 }
 
-func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage) Vpn {
+func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage, dirProvider config.DirectoryProvider) Vpn {
 	return &DefaultVpn{
 		cfgProvider:   cfgProvider,
 		holocron:      holocron,
 		serverStorage: serverStorage,
+		dirProvider:   dirProvider,
 	}
 }
 
@@ -43,8 +45,7 @@ func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
 		return errors.NewNetworkError("get server list", err)
 	}
 
-	serverStorage := servers.DefaultServerStorage{}
-	err = serverStorage.Save(locations)
+	err = vpn.serverStorage.Save(locations)
 	if err != nil {
 		return errors.NewConfigError("save server list", err)
 	}
@@ -262,13 +263,13 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		return errors.NewNetworkError("register public key", err)
 	}
 
-	cfgPath, err := writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
+	cfgPath, err := vpn.writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
 	if err != nil {
 		return errors.NewVPNError("write config", err)
 	}
 
 	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
-	err = console.WgUp(cfgPath)
+	err = console.WgUp(cfgPath, vpn.dirProvider)
 	if err != nil {
 		return errors.NewVPNError("connect", err)
 	}
@@ -296,12 +297,12 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 
 	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", cfg), output.MsgOutput)
 
-	cfgDir, err := ensureConfigDir()
+	cfgDir, err := vpn.dirProvider.GetServersDir()
 	if err != nil {
-		return errors.NewConfigError("ensure config directory", err)
+		return errors.NewConfigError("get servers directory", err)
 	}
 
-	err = console.WgDown(filepath.Join(cfgDir, cfg+".conf"))
+	err = console.WgDown(filepath.Join(cfgDir, cfg+".conf"), vpn.dirProvider)
 	if err != nil {
 		return errors.NewVPNError("disconnect", err)
 	}
@@ -355,7 +356,7 @@ func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
 	return publicKey, preSharedKey, privateKey, nil
 }
 
-func writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) (string, error) {
+func (vpn *DefaultVpn) writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) (string, error) {
 	content := fmt.Sprintf(`[Interface]
 PrivateKey = %s
 Address = %s, %s
@@ -371,7 +372,7 @@ AllowedIPs = 0.0.0.0/0, ::/0`,
 		server.IPv4AddrIn,
 	)
 
-	fullPath, err := saveWgConfig(cfgName, content)
+	fullPath, err := vpn.saveWgConfig(cfgName, content)
 	if err != nil {
 		return "", fmt.Errorf("failed to save config file: %w", err)
 	}
@@ -398,26 +399,15 @@ func getConnectedServers() ([]string, error) {
 	return s, nil
 }
 
-func ensureConfigDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+func (vpn *DefaultVpn) saveWgConfig(serverName string, configContent string) (string, error) {
+	configDir, err := vpn.dirProvider.GetServersDir()
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", fmt.Errorf("failed to get servers directory: %w", err)
 	}
 
-	configDir := filepath.Join(homeDir, ".config", "mbvpn", "servers")
-
-	// Create directory with appropriate permissions if it doesn't exist
+	// Ensure directory exists
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create config directory: %w", err)
-	}
-
-	return configDir, nil
-}
-
-func saveWgConfig(serverName string, configContent string) (string, error) {
-	configDir, err := ensureConfigDir()
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create servers directory: %w", err)
 	}
 
 	// Sanitize the server name to avoid path traversal attacks

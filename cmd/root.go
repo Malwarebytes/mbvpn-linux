@@ -59,11 +59,16 @@ func Execute() {
 }
 
 func init() {
-	cp := config.NewYamlConfigProvider()
-	holocron := remote.NewDefaultHolocron(config.NewConfigFileMachineIdProvider())
+	// Create directory provider (single source of truth for all directory paths)
+	dirProvider := config.NewDefaultDirectoryProvider()
+
+	// Wire up all dependencies with directory provider
+	cp := config.NewYamlConfigProvider(dirProvider)
+	machineIdProvider := config.NewConfigFileMachineIdProvider(dirProvider)
+	holocron := remote.NewDefaultHolocron(machineIdProvider)
 	sm := session.NewDefaultSessionManager(cp, holocron)
-	ss := servers.NewDefaultServerStorage()
-	vpn := vpn.NewDefaultVpn(cp, holocron, ss)
+	ss := servers.NewDefaultServerStorage(dirProvider)
+	vpn := vpn.NewDefaultVpn(cp, holocron, ss, dirProvider)
 
 	rootCmd.AddCommand(NewLoginCommand(sm))
 	rootCmd.AddCommand(NewLogoutCommand(sm))

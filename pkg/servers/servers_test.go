@@ -9,24 +9,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
 
-// setupTestDir creates a temporary directory for testing
-func setupTestDir(t *testing.T) (string, func()) {
+// setupTestDir creates a temporary directory and returns a directory provider for testing
+func setupTestDir(t *testing.T) (*config.TestDirectoryProvider, func()) {
 	tempDir := t.TempDir()
-	configDir := filepath.Join(tempDir, ".config", "mbvpn")
+	configDir := filepath.Join(tempDir, "mbvpn")
 	err := os.MkdirAll(configDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create test config directory: %v", err)
 	}
 
-	// Set HOME to temp directory for tests
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
+	dirProvider := config.NewTestDirectoryProvider(tempDir).(*config.TestDirectoryProvider)
 
-	return tempDir, func() {
-		os.Setenv("HOME", oldHome)
+	return dirProvider, func() {
+		// No cleanup needed as t.TempDir() handles it
 	}
 }
 
@@ -99,7 +98,10 @@ func createTestLocations() *remote.VpnLocations {
 }
 
 func TestNewDefaultServerStorage(t *testing.T) {
-	storage := NewDefaultServerStorage()
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
+
+	storage := NewDefaultServerStorage(dirProvider)
 	if storage == nil {
 		t.Fatal("NewDefaultServerStorage should return a non-nil storage")
 	}
@@ -109,10 +111,10 @@ func TestNewDefaultServerStorage(t *testing.T) {
 }
 
 func TestDefaultServerStorage_Save(t *testing.T) {
-	_, cleanup := setupTestDir(t)
+	dirProvider, cleanup := setupTestDir(t)
 	defer cleanup()
 
-	storage := &DefaultServerStorage{}
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 
 	t.Run("Save locations successfully", func(t *testing.T) {
@@ -122,8 +124,7 @@ func TestDefaultServerStorage_Save(t *testing.T) {
 		}
 
 		// Verify file was created
-		home, _ := os.UserHomeDir()
-		filePath := filepath.Join(home, ".config", "mbvpn", "servers.json")
+		filePath, _ := dirProvider.GetServersFile()
 
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			t.Error("servers.json file should be created")
@@ -155,29 +156,29 @@ func TestDefaultServerStorage_Save(t *testing.T) {
 }
 
 func TestDefaultServerStorage_Save_Errors(t *testing.T) {
-	storage := &DefaultServerStorage{}
 	locations := createTestLocations()
 
-	t.Run("Error when HOME not set", func(t *testing.T) {
-		oldHome := os.Getenv("HOME")
-		os.Unsetenv("HOME")
-		defer os.Setenv("HOME", oldHome)
+	t.Run("Error when directory provider fails", func(t *testing.T) {
+		mockDirProvider := &mockDirectoryProvider{shouldError: true}
+		storage := NewDefaultServerStorage(mockDirProvider)
 
 		err := storage.Save(locations)
 		if err == nil {
-			t.Error("Save should fail when HOME is not set")
+			t.Error("Save should fail when directory provider fails")
 		}
-		if !strings.Contains(err.Error(), "failed to get user home directory") {
-			t.Errorf("Expected error about home directory, got: %v", err)
+		if !strings.Contains(err.Error(), "failed to get servers file path") {
+			t.Errorf("Expected error about servers file path, got: %v", err)
 		}
 	})
 
 	t.Run("Error when directory is not writable", func(t *testing.T) {
-		tempDir, cleanup := setupTestDir(t)
+		dirProvider, cleanup := setupTestDir(t)
 		defer cleanup()
 
+		storage := NewDefaultServerStorage(dirProvider)
+
 		// Make config directory read-only
-		configDir := filepath.Join(tempDir, ".config", "mbvpn")
+		configDir, _ := dirProvider.GetConfigDir()
 		err := os.Chmod(configDir, 0555) // read and execute only
 		if err != nil {
 			t.Fatalf("Failed to change directory permissions: %v", err)
@@ -204,11 +205,51 @@ func TestDefaultServerStorage_Save_Errors(t *testing.T) {
 	})
 }
 
+// mockDirectoryProvider for error testing
+type mockDirectoryProvider struct {
+	shouldError bool
+}
+
+func (m *mockDirectoryProvider) GetConfigDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetServersDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetConfigFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetMachineIDFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetServersFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
 func TestDefaultServerStorage_Get(t *testing.T) {
-	tempDir, cleanup := setupTestDir(t)
+	dirProvider, cleanup := setupTestDir(t)
 	defer cleanup()
 
-	storage := &DefaultServerStorage{}
+	storage := NewDefaultServerStorage(dirProvider)
 	originalLocations := createTestLocations()
 
 	t.Run("Get after save", func(t *testing.T) {
@@ -240,11 +281,11 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 
 	t.Run("Get non-existent file", func(t *testing.T) {
 		// Create a fresh temporary directory for this test
-		freshTempDir, freshCleanup := setupTestDir(t)
+		freshDirProvider, freshCleanup := setupTestDir(t)
 		defer freshCleanup()
 
 		// Use a fresh storage instance with no saved data
-		newStorage := &DefaultServerStorage{}
+		newStorage := NewDefaultServerStorage(freshDirProvider)
 
 		_, err := newStorage.Get()
 		if err == nil {
@@ -252,15 +293,11 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 		} else if !strings.Contains(err.Error(), "failed to open file") {
 			t.Errorf("Expected error about opening file, got: %v", err)
 		}
-
-		// Suppress unused variable warning
-		_ = freshTempDir
 	})
 
 	t.Run("Get corrupted file", func(t *testing.T) {
 		// Create corrupted JSON file
-		home := tempDir
-		filePath := filepath.Join(home, ".config", "mbvpn", "servers.json")
+		filePath, _ := dirProvider.GetServersFile()
 
 		err := os.WriteFile(filePath, []byte("invalid json {"), 0644)
 		if err != nil {
@@ -271,35 +308,32 @@ func TestDefaultServerStorage_Get(t *testing.T) {
 		if err == nil {
 			t.Error("Get should fail with corrupted JSON")
 		}
-		if !strings.Contains(err.Error(), "failed to decode") {
+		if err != nil && !strings.Contains(err.Error(), "failed to decode") {
 			t.Errorf("Expected decode error, got: %v", err)
 		}
 	})
 }
 
 func TestDefaultServerStorage_Get_Errors(t *testing.T) {
-	storage := &DefaultServerStorage{}
-
-	t.Run("Error when HOME not set", func(t *testing.T) {
-		oldHome := os.Getenv("HOME")
-		os.Unsetenv("HOME")
-		defer os.Setenv("HOME", oldHome)
+	t.Run("Error when directory provider fails", func(t *testing.T) {
+		mockDirProvider := &mockDirectoryProvider{shouldError: true}
+		storage := NewDefaultServerStorage(mockDirProvider)
 
 		_, err := storage.Get()
 		if err == nil {
-			t.Error("Get should fail when HOME is not set")
+			t.Error("Get should fail when directory provider fails")
 		}
-		if !strings.Contains(err.Error(), "failed to get user home directory") {
-			t.Errorf("Expected error about home directory, got: %v", err)
+		if !strings.Contains(err.Error(), "failed to get servers file path") {
+			t.Errorf("Expected error about servers file path, got: %v", err)
 		}
 	})
 }
 
 func TestDefaultServerStorage_GetByServerName(t *testing.T) {
-	_, cleanup := setupTestDir(t)
+	dirProvider, cleanup := setupTestDir(t)
 	defer cleanup()
 
-	storage := &DefaultServerStorage{}
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 
 	// Save test data
@@ -398,11 +432,11 @@ func TestDefaultServerStorage_GetByServerName(t *testing.T) {
 }
 
 func TestDefaultServerStorage_GetByServerName_Errors(t *testing.T) {
-	storage := &DefaultServerStorage{}
-
 	t.Run("Error when no data saved", func(t *testing.T) {
-		_, cleanup := setupTestDir(t)
+		dirProvider, cleanup := setupTestDir(t)
 		defer cleanup()
+
+		storage := NewDefaultServerStorage(dirProvider)
 
 		_, err := storage.GetByServerName("test")
 		if err == nil {
@@ -467,17 +501,18 @@ func TestRandomInt(t *testing.T) {
 
 func TestServerStorage_Interface(t *testing.T) {
 	// Test that DefaultServerStorage implements ServerStorage interface
-	var storage ServerStorage = &DefaultServerStorage{}
+	dirProvider := config.NewDefaultDirectoryProvider()
+	var storage ServerStorage = NewDefaultServerStorage(dirProvider)
 
 	// Interface compliance test - this will fail to compile if interface is not implemented
 	_ = storage
 }
 
 func TestDefaultServerStorage_Integration(t *testing.T) {
-	_, cleanup := setupTestDir(t)
+	dirProvider, cleanup := setupTestDir(t)
 	defer cleanup()
 
-	storage := &DefaultServerStorage{}
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 
 	// Full integration test: save, get, and search
@@ -516,14 +551,11 @@ func TestDefaultServerStorage_Integration(t *testing.T) {
 // Benchmark tests for performance
 func BenchmarkDefaultServerStorage_Save(b *testing.B) {
 	tempDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
-
-	configDir := filepath.Join(tempDir, ".config", "mbvpn")
+	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	storage := &DefaultServerStorage{}
+	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 
 	b.ResetTimer()
@@ -534,14 +566,11 @@ func BenchmarkDefaultServerStorage_Save(b *testing.B) {
 
 func BenchmarkDefaultServerStorage_Get(b *testing.B) {
 	tempDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
-
-	configDir := filepath.Join(tempDir, ".config", "mbvpn")
+	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	storage := &DefaultServerStorage{}
+	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 	storage.Save(locations) // Setup
 
@@ -553,14 +582,11 @@ func BenchmarkDefaultServerStorage_Get(b *testing.B) {
 
 func BenchmarkDefaultServerStorage_GetByServerName(b *testing.B) {
 	tempDir := b.TempDir()
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
-
-	configDir := filepath.Join(tempDir, ".config", "mbvpn")
+	configDir := filepath.Join(tempDir, "mbvpn")
 	os.MkdirAll(configDir, 0755)
 
-	storage := &DefaultServerStorage{}
+	dirProvider := config.NewTestDirectoryProvider(tempDir)
+	storage := NewDefaultServerStorage(dirProvider)
 	locations := createTestLocations()
 	storage.Save(locations) // Setup
 
