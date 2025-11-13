@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	// baseUrl = "https://idms-holocron-stage.mwbsys.com/graphql"
 	productCode    = "MBMA-C"
 	productVersion = "5.14.0"
 )

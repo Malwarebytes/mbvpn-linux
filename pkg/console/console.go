@@ -107,11 +107,10 @@ func sanitizeWgConfigPath(cfgPath string) (string, error) {
 	cleanPath := filepath.Clean(cfgPath)
 
 	// Expand home directory if present
-	if strings.HasPrefix(cleanPath, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get home directory: %w", err)
-		}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	} else if strings.HasPrefix(cleanPath, "~/") {
 		cleanPath = filepath.Join(home, cleanPath[2:])
 	}
 
@@ -132,7 +131,7 @@ func sanitizeWgConfigPath(cfgPath string) (string, error) {
 	}
 
 	// Ensure it's within the expected config directory
-	expectedBase := filepath.Join(os.Getenv("HOME"), ".config", "mbvpn", "servers")
+	expectedBase := filepath.Join(home, ".config", "mbvpn", "servers")
 	if !strings.HasPrefix(absPath, expectedBase) {
 		return "", fmt.Errorf("config file must be within %s", expectedBase)
 	}
