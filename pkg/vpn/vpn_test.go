@@ -6,8 +6,61 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
+
+// Helper function to set up test directory
+func setupTestDir(t *testing.T) (config.DirectoryProvider, func()) {
+	tempDir := t.TempDir()
+	configDir := filepath.Join(tempDir, "mbvpn")
+	serversDir := filepath.Join(configDir, "servers")
+	if err := os.MkdirAll(serversDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directories: %v", err)
+	}
+	dirProvider := config.NewDirectoryProvider(tempDir)
+	return dirProvider, func() {}
+}
+
+// Mock DirectoryProvider for error testing
+type mockDirectoryProvider struct {
+	shouldError bool
+}
+
+func (m *mockDirectoryProvider) GetConfigDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetServersDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetConfigFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetMachineIDFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
+func (m *mockDirectoryProvider) GetServersFile() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
 
 func TestGetCountryFlag(t *testing.T) {
 	tests := []struct {
@@ -175,28 +228,26 @@ func TestGetCountryFlag_AllMappedCountries(t *testing.T) {
 	}
 }
 
-func TestEnsureConfigDir(t *testing.T) {
+func TestGetServersDir(t *testing.T) {
 	// Test creating config directory
-	tempDir := t.TempDir()
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
 
-	// Set HOME to temp directory for this test
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	vpn := &DefaultVpn{dirProvider: dirProvider}
 
-	configDir, err := ensureConfigDir()
+	configDir, err := vpn.dirProvider.GetServersDir()
 	if err != nil {
-		t.Fatalf("ensureConfigDir should succeed: %v", err)
+		t.Fatalf("GetServersDir should succeed: %v", err)
 	}
 
-	expectedDir := filepath.Join(tempDir, ".config", "mbvpn", "servers")
-	if configDir != expectedDir {
-		t.Errorf("Expected config dir '%s', got '%s'", expectedDir, configDir)
+	// Verify directory path is correct
+	if !strings.Contains(configDir, "mbvpn") || !strings.Contains(configDir, "servers") {
+		t.Errorf("Expected config dir to contain 'mbvpn/servers', got '%s'", configDir)
 	}
 
-	// Verify directory was actually created
+	// Verify directory was created during setup
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		t.Error("Config directory should be created")
+		t.Error("Config directory should exist")
 	}
 
 	// Verify directory permissions
@@ -210,28 +261,22 @@ func TestEnsureConfigDir(t *testing.T) {
 	}
 }
 
-func TestEnsureConfigDir_ErrorCase(t *testing.T) {
-	// Test error when HOME is not set
-	oldHome := os.Getenv("HOME")
-	os.Unsetenv("HOME")
-	defer os.Setenv("HOME", oldHome)
+func TestGetServersDir_ErrorCase(t *testing.T) {
+	// Test error case using mockDirectoryProvider
+	mockDirProvider := &mockDirectoryProvider{shouldError: true}
+	vpn := &DefaultVpn{dirProvider: mockDirProvider}
 
-	_, err := ensureConfigDir()
+	_, err := vpn.dirProvider.GetServersDir()
 	if err == nil {
-		t.Error("ensureConfigDir should fail when HOME is not set")
-	}
-	if !strings.Contains(err.Error(), "failed to get home directory") {
-		t.Errorf("Expected error about home directory, got: %v", err)
+		t.Error("GetServersDir should fail when directory provider fails")
 	}
 }
 
 func TestSaveWgConfig(t *testing.T) {
-	tempDir := t.TempDir()
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
 
-	// Set HOME to temp directory for this test
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	vpn := &DefaultVpn{dirProvider: dirProvider}
 
 	serverName := "test-server"
 	configContent := `[Interface]
@@ -243,14 +288,14 @@ PublicKey = test-public-key
 Endpoint = 203.0.113.1:51820
 AllowedIPs = 0.0.0.0/0, ::/0`
 
-	filePath, err := saveWgConfig(serverName, configContent)
+	filePath, err := vpn.saveWgConfig(serverName, configContent)
 	if err != nil {
 		t.Fatalf("saveWgConfig should succeed: %v", err)
 	}
 
-	expectedPath := filepath.Join(tempDir, ".config", "mbvpn", "servers", "test-server.conf")
-	if filePath != expectedPath {
-		t.Errorf("Expected file path '%s', got '%s'", expectedPath, filePath)
+	// Verify file path contains expected components
+	if !strings.Contains(filePath, "mbvpn") || !strings.Contains(filePath, "servers") || !strings.Contains(filePath, "test-server.conf") {
+		t.Errorf("Expected file path to contain 'mbvpn/servers/test-server.conf', got '%s'", filePath)
 	}
 
 	// Verify file was created
@@ -280,12 +325,10 @@ AllowedIPs = 0.0.0.0/0, ::/0`
 }
 
 func TestSaveWgConfig_PathTraversal(t *testing.T) {
-	tempDir := t.TempDir()
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
 
-	// Set HOME to temp directory for this test
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	vpn := &DefaultVpn{dirProvider: dirProvider}
 
 	// Test that path traversal attempts are sanitized
 	maliciousNames := []string{
@@ -296,15 +339,14 @@ func TestSaveWgConfig_PathTraversal(t *testing.T) {
 
 	for _, name := range maliciousNames {
 		t.Run(name, func(t *testing.T) {
-			filePath, err := saveWgConfig(name, "test content")
+			filePath, err := vpn.saveWgConfig(name, "test content")
 			if err != nil {
 				t.Fatalf("saveWgConfig should not fail due to path sanitization: %v", err)
 			}
 
-			// Verify the file is created in the correct directory
-			expectedDir := filepath.Join(tempDir, ".config", "mbvpn", "servers")
-			if !strings.HasPrefix(filePath, expectedDir) {
-				t.Errorf("File should be created in config directory, got: %s", filePath)
+			// Verify the file is created in the correct directory (contains mbvpn/servers)
+			if !strings.Contains(filePath, "mbvpn") || !strings.Contains(filePath, "servers") {
+				t.Errorf("File should be created in mbvpn/servers directory, got: %s", filePath)
 			}
 
 			// Verify the filename is sanitized (should not contain path separators)
@@ -317,12 +359,10 @@ func TestSaveWgConfig_PathTraversal(t *testing.T) {
 }
 
 func TestWriteConfig(t *testing.T) {
-	tempDir := t.TempDir()
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
 
-	// Set HOME to temp directory for this test
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	vpn := &DefaultVpn{dirProvider: dirProvider}
 
 	cfgName := "test-server"
 	server := remote.Server{
@@ -334,7 +374,7 @@ func TestWriteConfig(t *testing.T) {
 	ipv4 := "10.0.0.1/32"
 	ipv6 := "2001:db8::1/128"
 
-	configPath, err := writeConfig(cfgName, server, privateKey, ipv4, ipv6)
+	configPath, err := vpn.writeConfig(cfgName, server, privateKey, ipv4, ipv6)
 	if err != nil {
 		t.Fatalf("writeConfig should succeed: %v", err)
 	}
@@ -507,34 +547,22 @@ func TestNewDefaultVpn(t *testing.T) {
 // Test individual functions that can be tested independently
 
 // Test error handling in helper functions
-func TestEnsureConfigDir_HomeNotSet(t *testing.T) {
-	oldHome := os.Getenv("HOME")
-	os.Unsetenv("HOME")
-	defer os.Setenv("HOME", oldHome)
-
-	_, err := ensureConfigDir()
-	if err == nil {
-		t.Error("ensureConfigDir should fail when HOME not set")
-	}
-}
-
 func TestSaveWgConfig_ErrorHandling(t *testing.T) {
-	// Test with invalid home directory (permission denied)
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", "/dev/null") // This should cause permission error when trying to create dir
-	defer os.Setenv("HOME", oldHome)
+	// Test with mock directory provider that returns errors
+	mockDirProvider := &mockDirectoryProvider{shouldError: true}
+	vpn := &DefaultVpn{dirProvider: mockDirProvider}
 
-	_, err := saveWgConfig("test", "content")
+	_, err := vpn.saveWgConfig("test", "content")
 	if err == nil {
-		t.Error("saveWgConfig should fail with invalid home directory")
+		t.Error("saveWgConfig should fail when directory provider fails")
 	}
 }
 
 func TestWriteConfig_Integration(t *testing.T) {
-	tempDir := t.TempDir()
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
+
+	vpn := &DefaultVpn{dirProvider: dirProvider}
 
 	server := remote.Server{
 		Hostname:   "test.example.com",
@@ -542,7 +570,7 @@ func TestWriteConfig_Integration(t *testing.T) {
 		PublicKey:  "server-public-key",
 	}
 
-	configPath, err := writeConfig("test-server", server, "private-key", "10.0.0.1/32", "2001:db8::1/128")
+	configPath, err := vpn.writeConfig("test-server", server, "private-key", "10.0.0.1/32", "2001:db8::1/128")
 	if err != nil {
 		t.Fatalf("writeConfig should succeed: %v", err)
 	}

@@ -8,11 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
-)
-
-const (
-	serversFile = "servers.json"
 )
 
 type ServerStorage interface {
@@ -21,22 +18,24 @@ type ServerStorage interface {
 	GetByServerName(name string) (*remote.Server, error)
 }
 
-func NewDefaultServerStorage() ServerStorage {
-	return &DefaultServerStorage{}
+func NewDefaultServerStorage(dirProvider config.DirectoryProvider) ServerStorage {
+	return &DefaultServerStorage{
+		dirProvider: dirProvider,
+	}
 }
 
-type DefaultServerStorage struct{}
+type DefaultServerStorage struct {
+	dirProvider config.DirectoryProvider
+}
 
 func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
-	home, err := os.UserHomeDir()
+	path, err := s.dirProvider.GetServersFile()
 	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
+		return fmt.Errorf("failed to get servers file path: %w", err)
 	}
 
-	configDir := filepath.Join(home, ".config", "mbvpn")
-
-	path := filepath.Join(configDir, serversFile)
-
+	// Ensure directory exists
+	configDir := filepath.Dir(path)
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create config directory '%s': %w", configDir, err)
 	}
@@ -52,14 +51,10 @@ func (s *DefaultServerStorage) Save(locations *remote.VpnLocations) error {
 }
 
 func (s *DefaultServerStorage) Get() (*remote.VpnLocations, error) {
-	home, err := os.UserHomeDir()
+	path, err := s.dirProvider.GetServersFile()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user home directory: %w", err)
+		return nil, fmt.Errorf("failed to get servers file path: %w", err)
 	}
-
-	configDir := filepath.Join(home, ".config", "mbvpn")
-
-	path := filepath.Join(configDir, serversFile)
 
 	file, err := os.Open(path)
 	if err != nil {

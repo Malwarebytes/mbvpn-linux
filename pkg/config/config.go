@@ -24,21 +24,13 @@ type ConfigProvider interface {
 }
 
 type YamlConfigProvider struct{
-	// For testing purposes
-	homeDir string
+	dirProvider DirectoryProvider
 }
 
-func NewYamlConfigProvider() ConfigProvider {
-	return &YamlConfigProvider{}
-}
-
-// GetUserHomeDir returns the user's home directory
-// This is extracted to a method to make it testable
-func (cp *YamlConfigProvider) GetUserHomeDir() (string, error) {
-	if cp.homeDir != "" {
-		return cp.homeDir, nil
+func NewYamlConfigProvider(dirProvider DirectoryProvider) ConfigProvider {
+	return &YamlConfigProvider{
+		dirProvider: dirProvider,
 	}
-	return os.UserHomeDir()
 }
 
 func (cp *YamlConfigProvider) StoreInstallationToken(token string) error {
@@ -61,12 +53,10 @@ func (cp *YamlConfigProvider) GetInstallationToken() (string, error) {
 }
 
 func (cp *YamlConfigProvider) DeleteConfig() error {
-	home, err := cp.GetUserHomeDir()
+	configPath, err := cp.dirProvider.GetConfigFile()
 	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
+		return fmt.Errorf("failed to get config file path: %w", err)
 	}
-
-	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 
 	err = os.Remove(configPath)
 	if err != nil {
@@ -77,12 +67,11 @@ func (cp *YamlConfigProvider) DeleteConfig() error {
 }
 
 func (cp *YamlConfigProvider) update(cfg Config) error {
-	home, err := cp.GetUserHomeDir()
+	configPath, err := cp.dirProvider.GetConfigFile()
 	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
+		return fmt.Errorf("failed to get config file path: %w", err)
 	}
 
-	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
 	f, err := os.OpenFile(configPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open config file for writing: %w", err)
@@ -94,7 +83,7 @@ func (cp *YamlConfigProvider) update(cfg Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to encode config data: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -117,16 +106,14 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 
 
 func (cp *YamlConfigProvider) Get() (Config, error) {
-	home, err := cp.GetUserHomeDir()
+	configPath, err := cp.dirProvider.GetConfigFile()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to get user home directory: %w", err)
+		return Config{}, fmt.Errorf("failed to get config file path: %w", err)
 	}
 
-	configPath := filepath.Join(home, ".config", "mbvpn", "config.yml")
-	
 	// Try to open the file
 	f, err := os.Open(configPath)
-	
+
 	// If file doesn't exist, create it with default config
 	if os.IsNotExist(err) {
 		// Ensure directory exists
@@ -134,7 +121,7 @@ func (cp *YamlConfigProvider) Get() (Config, error) {
 		if err := os.MkdirAll(configDir, 0755); err != nil {
 			return Config{}, fmt.Errorf("failed to create config directory: %w", err)
 		}
-		
+
 		// Create default config
 		defaultConfig := Config{
 			// Set your default values here
@@ -142,19 +129,19 @@ func (cp *YamlConfigProvider) Get() (Config, error) {
 			// ServerURL: "default.server.com",
 			// Port: 51820,
 		}
-		
+
 		// Create and write to the file
 		f, err := os.Create(configPath)
 		if err != nil {
 			return Config{}, fmt.Errorf("failed to create config file: %w", err)
 		}
 		defer f.Close()
-		
+
 		encoder := yaml.NewEncoder(f)
 		if err := encoder.Encode(defaultConfig); err != nil {
 			return Config{}, fmt.Errorf("failed to write default config: %w", err)
 		}
-		
+
 		return defaultConfig, nil
 	} else if err != nil {
 		// Handle other errors

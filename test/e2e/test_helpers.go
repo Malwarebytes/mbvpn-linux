@@ -38,7 +38,7 @@ func setupTestHome(t *testing.T) string {
 	}
 
 	// Create the necessary subdirectories
-	configDir := filepath.Join(homeDir, ".config", "mbvpn")
+	configDir := filepath.Join(homeDir, "mbvpn")
 	err = os.MkdirAll(configDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
@@ -69,7 +69,7 @@ func cleanupTestHome(t *testing.T, homeDir string) {
 func checkConfigFile(t *testing.T, homeDir string) bool {
 	t.Helper()
 
-	configPath := filepath.Join(homeDir, ".config", "mbvpn", "config.yml")
+	configPath := filepath.Join(homeDir, "mbvpn", "config.yml")
 
 	// Check if the file exists
 	_, err := os.Stat(configPath)
@@ -93,7 +93,7 @@ func checkConfigFile(t *testing.T, homeDir string) bool {
 func checkConfigDeleted(t *testing.T, homeDir string) bool {
 	t.Helper()
 
-	configPath := filepath.Join(homeDir, ".config", "mbvpn", "config.yml")
+	configPath := filepath.Join(homeDir, "mbvpn", "config.yml")
 
 	// Check if the file exists
 	_, err := os.Stat(configPath)
@@ -104,7 +104,7 @@ func checkConfigDeleted(t *testing.T, homeDir string) bool {
 func createMockSession(t *testing.T, homeDir string) {
 	t.Helper()
 
-	configDir := filepath.Join(homeDir, ".config", "mbvpn")
+	configDir := filepath.Join(homeDir, "mbvpn")
 	configPath := filepath.Join(configDir, "config.yml")
 	mockConfig := `installation_token: mock-installation-token
 private_key: ""
