@@ -1,0 +1,114 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  BINARY_NAME: mbvpn
+  GO_PKG: github.com/malwarebytes/mbvpn-linux
+  VERSION_MAJOR:
+    sh: echo "${VERSION_MAJOR:-0}"
+  VERSION_MINOR:
+    sh: echo "${VERSION_MINOR:-0}"
+  VERSION_PATCH:
+    sh: echo "${VERSION_PATCH:-1}"
+  VERSION_BUILD:
+    sh: echo "${VERSION_BUILD:-0}"
+
+  # Common ldflags
+  COMMON_LDFLAGS: >-
+    -X '{{.GO_PKG}}/pkg/config.VersionMajor={{.VERSION_MAJOR}}'
+    -X '{{.GO_PKG}}/pkg/config.VersionMinor={{.VERSION_MINOR}}'
+    -X '{{.GO_PKG}}/pkg/config.VersionPatch={{.VERSION_PATCH}}'
+    -X '{{.GO_PKG}}/pkg/config.VersionBuild={{.VERSION_BUILD}}'
+
+  # Environment ldflags
+  ENV_LDFLAGS: >-
+    -X '{{.GO_PKG}}/pkg/config.BuildEnv=production'
+    -X '{{.GO_PKG}}/pkg/config.HolocronUrl={{.MBVPN_HOLOCRON_URL}}'
+
+  # Debug flags
+  DEBUG_LDFLAGS: -X '{{.GO_PKG}}/pkg/config.BuildType=debug'
+  DEBUG_GCFLAGS: -N -l
+
+  # Release flags
+  RELEASE_LDFLAGS: -X '{{.GO_PKG}}/pkg/config.BuildType=release'
+  RELEASE_BUILDFLAGS: -trimpath
+
+tasks:
+  build:
+    desc: Build release version (default)
+    cmds:
+      - task: build-release
+
+  build-debug:
+    desc: Build debug version with debug symbols
+    cmds:
+      - >-
+        go build {{.GOFLAGS}}
+        -o {{.BINARY_NAME}}
+        -gcflags="{{.DEBUG_GCFLAGS}}"
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.DEBUG_LDFLAGS}}"
+
+  build-release:
+    desc: Build release version with optimizations
+    cmds:
+      - >-
+        go build {{.GOFLAGS}}
+        {{.RELEASE_BUILDFLAGS}}
+        -o {{.BINARY_NAME}}
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
+
+  install:
+    desc: Install release version (default)
+    cmds:
+      - task: install-release
+
+  install-debug:
+    desc: Install debug version with debug symbols
+    cmds:
+      - >-
+        go install
+        -gcflags="{{.DEBUG_GCFLAGS}}"
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.DEBUG_LDFLAGS}}"
+        .
+
+  install-release:
+    desc: Install release version with optimizations
+    cmds:
+      - >-
+        go install
+        {{.RELEASE_BUILDFLAGS}}
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
+        .
+
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test-unit
+      - task: test-integration
+      - task: test-e2e
+
+  test-unit:
+    desc: Run unit tests only
+    cmds:
+      - go test ./...
+
+  test-integration:
+    desc: Run integration tests
+    deps: [build-release]
+    cmds:
+      - go test -tags=integration -v ./test/integration/...
+
+  test-e2e:
+    desc: Run end-to-end tests
+    deps: [build-release]
+    cmds:
+      - go test -tags=e2e -v ./test/e2e/...
+    env:
+      MBVPN_TEST_LICENSE_KEY: "{{.MBVPN_TEST_LICENSE_KEY}}"
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - go clean
+      - rm -f {{.BINARY_NAME}}

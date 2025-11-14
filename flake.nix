@@ -19,7 +19,7 @@
             go
             wireguard-tools
             git
-            gnumake
+            go-task
             podman
             podman-compose
             podman-desktop
