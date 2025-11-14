@@ -15,9 +15,6 @@ func TestActivationMethod_Constants(t *testing.T) {
 	if ActivationMethodOneTimeToken != "oneTimeToken" {
 		t.Errorf("Expected ActivationMethodOneTimeToken to be 'oneTimeToken', got '%s'", ActivationMethodOneTimeToken)
 	}
-	if ActivationMethodLicenseKey != "licenseKey" {
-		t.Errorf("Expected ActivationMethodLicenseKey to be 'licenseKey', got '%s'", ActivationMethodLicenseKey)
-	}
 }
 
 func TestActivationMode_Constants(t *testing.T) {
@@ -73,7 +70,7 @@ func TestErrorResponse_JSONSerialization(t *testing.T) {
 
 	t.Run("Unmarshal ErrorResponse", func(t *testing.T) {
 		jsonData := `{"errors":[{"message":"Test error"}]}`
-		
+
 		var errResp ErrorResponse
 		err := json.Unmarshal([]byte(jsonData), &errResp)
 		if err != nil {
@@ -121,9 +118,9 @@ func TestRegisterDeviceInput_JSONSerialization(t *testing.T) {
 func TestActivateDeviceInput_JSONSerialization(t *testing.T) {
 	input := ActivateDeviceInput{
 		Modules:          []ProductModule{ProductModulePrivacy},
-		ActivationMethod: ActivationMethodLicenseKey,
+		ActivationMethod: ActivationMethodOneTimeToken,
 		ActivationMode:   ActivationModePassive,
-		LicenseKey:       "TEST-LICENSE-KEY",
+		OneTimeToken:     "TEST-TOKEN",
 	}
 
 	data, err := json.Marshal(input)
@@ -139,9 +136,6 @@ func TestActivateDeviceInput_JSONSerialization(t *testing.T) {
 
 	if unmarshaled.ActivationMethod != input.ActivationMethod {
 		t.Errorf("Expected ActivationMethod '%s', got '%s'", input.ActivationMethod, unmarshaled.ActivationMethod)
-	}
-	if unmarshaled.LicenseKey != input.LicenseKey {
-		t.Errorf("Expected LicenseKey '%s', got '%s'", input.LicenseKey, unmarshaled.LicenseKey)
 	}
 }
 
@@ -190,11 +184,11 @@ func TestDeviceOutput_JSONSerialization(t *testing.T) {
 	}
 
 	if unmarshaled.Device.InstallationToken != output.Device.InstallationToken {
-		t.Errorf("Expected InstallationToken '%s', got '%s'", 
+		t.Errorf("Expected InstallationToken '%s', got '%s'",
 			output.Device.InstallationToken, unmarshaled.Device.InstallationToken)
 	}
 	if unmarshaled.DeviceModules.Privacy.Status != output.DeviceModules.Privacy.Status {
-		t.Errorf("Expected Status '%s', got '%s'", 
+		t.Errorf("Expected Status '%s', got '%s'",
 			output.DeviceModules.Privacy.Status, unmarshaled.DeviceModules.Privacy.Status)
 	}
 }
@@ -224,7 +218,7 @@ func TestVpnIpAddresses_JSONSerialization(t *testing.T) {
 		t.Errorf("Expected IPv6 '%s', got '%s'", ipAddrs.IpV6, unmarshaled.IpV6)
 	}
 	if unmarshaled.KeyExpirationHours != ipAddrs.KeyExpirationHours {
-		t.Errorf("Expected KeyExpirationHours %d, got %d", 
+		t.Errorf("Expected KeyExpirationHours %d, got %d",
 			ipAddrs.KeyExpirationHours, unmarshaled.KeyExpirationHours)
 	}
 }
@@ -298,7 +292,7 @@ func TestServer_JSONSerialization(t *testing.T) {
 	}
 	if len(unmarshaled.PortRanges) > 0 {
 		if unmarshaled.PortRanges[0].From != server.PortRanges[0].From {
-			t.Errorf("Expected port range From %d, got %d", 
+			t.Errorf("Expected port range From %d, got %d",
 				server.PortRanges[0].From, unmarshaled.PortRanges[0].From)
 		}
 	}
@@ -345,11 +339,11 @@ func TestVpnLocations_JSONSerialization(t *testing.T) {
 	if len(unmarshaled.Countries) != len(locations.Countries) {
 		t.Errorf("Expected %d countries, got %d", len(locations.Countries), len(unmarshaled.Countries))
 	}
-	
+
 	if len(unmarshaled.Countries) > 0 {
 		country := unmarshaled.Countries[0]
 		originalCountry := locations.Countries[0]
-		
+
 		if country.Code != originalCountry.Code {
 			t.Errorf("Expected country code '%s', got '%s'", originalCountry.Code, country.Code)
 		}
@@ -389,7 +383,7 @@ func TestVpnClientDefaults_JSONSerialization(t *testing.T) {
 		t.Errorf("Expected IPv4 MTU %d, got %d", defaults.IPv4.MTU, unmarshaled.IPv4.MTU)
 	}
 	if unmarshaled.KeyExpirationHours != defaults.KeyExpirationHours {
-		t.Errorf("Expected KeyExpirationHours %d, got %d", 
+		t.Errorf("Expected KeyExpirationHours %d, got %d",
 			defaults.KeyExpirationHours, unmarshaled.KeyExpirationHours)
 	}
 }
@@ -412,7 +406,7 @@ func TestEmptyStructs_JSONSerialization(t *testing.T) {
 		if err != nil {
 			t.Errorf("Failed to marshal empty struct %T: %v", test, err)
 		}
-		
+
 		// Basic check that we get valid JSON
 		if len(data) == 0 {
 			t.Errorf("Expected non-empty JSON for %T", test)
