@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -15,24 +12,14 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 		Long: `Uses provided credentials to perform activation for this device.
    The command claims available seat of your Malwarebytes license.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var err error
-
-			key, _ := cmd.Flags().GetString("licenseKey")
-			if key == "" {
-				code, _ := cmd.Flags().GetString("mbCode")
-				err = sm.LoginWithCode(code)
-			} else {
-				err = sm.LoginWithKey(key)
-			}
-
-			// Handle any errors that might have occurred
+			code, _ := cmd.Flags().GetString("code")
+			err := sm.LoginWithCode(code)
 			HandleError(err)
 		},
 	}
 
-	cmd.Flags().StringP("licenseKey", "k", "", "License key.")
-	cmd.Flags().StringP("mbCode", "c", "", "MB-code.")
-	cmd.MarkFlagsOneRequired("licenseKey", "mbCode")
+	cmd.Flags().StringP("code", "c", "", "MB-code.")
+	cmd.MarkFlagRequired("code")
 
 	return cmd
 }

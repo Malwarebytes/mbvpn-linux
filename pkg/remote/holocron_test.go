@@ -72,7 +72,7 @@ func TestApiSuccessCases(t *testing.T) {
 			name:     "ActivateDevice",
 			response: `{"data": {"activateDevice": {"deviceModules": {"privacy": {"status": "licensed", "termEndsOn": "2025-12-31"}}}}}`,
 			testFunc: func(api *DefaultHolocron) (interface{}, error) {
-				return api.ActivateDevice("mock-token", "mock-key", true)
+				return api.ActivateDevice("mock-token", "mock-code")
 			},
 			validate: func(t *testing.T, result interface{}) {
 				deviceModule := result.(*DeviceModule)
@@ -207,7 +207,7 @@ func TestApiErrorCases(t *testing.T) {
 			name:     "ActivateDevice",
 			response: `{ "errors": [ { "message": "mock-error" } ] }`,
 			testFunc: func(api *DefaultHolocron) (interface{}, error) {
-				return api.ActivateDevice("", "", false)
+				return api.ActivateDevice("", "")
 			},
 		},
 		{

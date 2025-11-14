@@ -13,8 +13,7 @@ import (
 )
 
 type SessionManager interface {
-	LoginWithKey(string) error
-	LoginWithCode(string) error
+	LoginWithCode(code string) error
 	Logout() error
 	Active() bool
 }
@@ -31,16 +30,6 @@ func NewDefaultSessionManager(cfgProvider config.ConfigProvider, holocron remote
 	}
 }
 
-func (sm *DefaultSessionManager) LoginWithKey(key string) error {
-	formattedKey := strings.ToUpper(key)
-
-	if len(formattedKey) != 23 {
-		return errors.NewUserError("Invalid license key. License key should be 23 characters long.", errors.ErrInvalidInput)
-	}
-
-	return sm.login(formattedKey, false)
-}
-
 func (sm *DefaultSessionManager) LoginWithCode(code string) error {
 	formattedCode := strings.ToUpper(code)
 	formattedCode = strings.TrimPrefix(formattedCode, "MB-")
@@ -49,10 +38,10 @@ func (sm *DefaultSessionManager) LoginWithCode(code string) error {
 		return errors.NewUserError("Invalid MB-code. MB-code should look like MB-XXXXXX or XXXXXX.", errors.ErrInvalidInput)
 	}
 
-	return sm.login(formattedCode, true)
+	return sm.login(formattedCode)
 }
 
-func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
+func (sm *DefaultSessionManager) login(code string) error {
 	// Check current session
 	if sm.Active() {
 		return errors.NewUserError("There is an active session on your device. Try logout command first if you want to re-login.", nil)
@@ -74,7 +63,7 @@ func (sm *DefaultSessionManager) login(token string, mbcode bool) error {
 	}
 
 	// Activate device
-	m, err := sm.holocron.ActivateDevice(installationToken, token, mbcode)
+	m, err := sm.holocron.ActivateDevice(installationToken, code)
 	if err != nil {
 		sm.cfgProvider.DeleteConfig()
 		log.Errorf("Error activating the device: %v", err)

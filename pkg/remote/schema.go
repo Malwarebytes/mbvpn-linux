@@ -18,7 +18,6 @@ type ActivationMethod string
 
 const (
 	ActivationMethodOneTimeToken ActivationMethod = "oneTimeToken"
-	ActivationMethodLicenseKey   ActivationMethod = "licenseKey"
 )
 
 type ActivationMode string
@@ -52,7 +51,6 @@ type ActivateDeviceInput struct {
 	ActivationMethod ActivationMethod `json:"activationMethod"`
 	ActivationMode   ActivationMode   `json:"activationMode"`
 	OneTimeToken     string           `json:"oneTimeToken"`
-	LicenseKey       string           `json:"licenseKey"`
 }
 
 type HolocronResponse[D any] struct {

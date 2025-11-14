@@ -25,7 +25,7 @@ var client = &http.Client{Timeout: time.Second * 10}
 
 type Holocron interface {
 	RegisterDevice() (string, error)
-	ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error)
+	ActivateDevice(installationToken string, code string) (*DeviceModule, error)
 	CheckDevice(installationToken string) (*DeviceModule, error)
 	DeactivateDevice(installationToken string) (*DeviceModule, error)
 	VpnRegisterPublicKey(installationToken string, key string) (*VpnIpAddresses, error)
@@ -81,18 +81,13 @@ func (api *DefaultHolocron) RegisterDevice() (string, error) {
 	return response.Data.RegisterDevice.Device.InstallationToken, nil
 }
 
-func (api *DefaultHolocron) ActivateDevice(installationToken string, key string, mbcode bool) (*DeviceModule, error) {
+func (api *DefaultHolocron) ActivateDevice(installationToken string, code string) (*DeviceModule, error) {
 	log.Debugln("Begin: `ActivateDevice` request")
 	input := ActivateDeviceInput{
-		Modules:        []ProductModule{ProductModulePrivacy},
-		ActivationMode: ActivationModePassive,
-	}
-	if mbcode {
-		input.ActivationMethod = ActivationMethodOneTimeToken
-		input.OneTimeToken = key
-	} else {
-		input.ActivationMethod = ActivationMethodLicenseKey
-		input.LicenseKey = key
+		Modules:          []ProductModule{ProductModulePrivacy},
+		ActivationMode:   ActivationModePassive,
+		ActivationMethod: ActivationMethodOneTimeToken,
+		OneTimeToken:     code,
 	}
 
 	requestBody := map[string]interface{}{
