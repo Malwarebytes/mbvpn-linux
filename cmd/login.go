@@ -19,7 +19,7 @@ func NewLoginCommand(sm session.SessionManager) *cobra.Command {
 	}
 
 	cmd.Flags().StringP("code", "c", "", "MB-code.")
-	cmd.MarkFlagsOneRequired("code")
+	cmd.MarkFlagRequired("code")
 
 	return cmd
 }
