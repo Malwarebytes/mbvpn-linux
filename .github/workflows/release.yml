@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (format: vX.Y.Z)'
+        description: "Version to release (format: vX.Y.Z)"
         required: true
         type: string
       is_production:
-        description: 'Production release'
+        description: "Production release"
         required: true
         default: true
         type: boolean
@@ -69,7 +69,10 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
+
+      - name: Install Task
+        uses: go-task/setup-task@v1
 
       - name: Set version in environment
         run: |
