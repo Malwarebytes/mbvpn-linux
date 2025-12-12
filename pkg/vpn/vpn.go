@@ -268,8 +268,14 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		return errors.NewVPNError("write config", err)
 	}
 
-	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
-	err = console.WgUp(cfgPath, vpn.dirProvider)
+	// Copy config to /etc/wireguard for wg-quick to use
+	systemCfgPath, err := vpn.copyConfigToSystem(cfgPath, cfgName)
+	if err != nil {
+		return errors.NewVPNError("copy config to system", err)
+	}
+
+	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", systemCfgPath), output.MsgOutput)
+	err = console.WgUp(systemCfgPath, vpn.dirProvider)
 	if err != nil {
 		return errors.NewVPNError("connect", err)
 	}
@@ -297,12 +303,13 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 
 	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", cfg), output.MsgOutput)
 
-	cfgDir, err := vpn.dirProvider.GetServersDir()
+	wireguardDir, err := vpn.dirProvider.GetWireguardDir()
 	if err != nil {
-		return errors.NewConfigError("get servers directory", err)
+		return errors.NewConfigError("get wireguard directory", err)
 	}
 
-	err = console.WgDown(filepath.Join(cfgDir, cfg+".conf"), vpn.dirProvider)
+	systemCfgPath := filepath.Join(wireguardDir, cfg+".conf")
+	err = console.WgDown(systemCfgPath, vpn.dirProvider)
 	if err != nil {
 		return errors.NewVPNError("disconnect", err)
 	}
@@ -416,4 +423,32 @@ func (vpn *DefaultVpn) saveWgConfig(serverName string, configContent string) (st
 	// Create the file with restricted permissions (600) as it contains private keys
 	filePath := filepath.Join(configDir, serverName+".conf")
 	return filePath, os.WriteFile(filePath, []byte(configContent), 0o600)
+}
+
+// copyConfigToSystem copies a config file from user directory to /etc/wireguard
+// This requires sudo permissions and is called during connection operations.
+func (vpn *DefaultVpn) copyConfigToSystem(userConfigPath, serverName string) (string, error) {
+	wireguardDir, err := vpn.dirProvider.GetWireguardDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get wireguard directory: %w", err)
+	}
+
+	// Ensure /etc/wireguard exists with proper permissions
+	if err := os.MkdirAll(wireguardDir, 0o700); err != nil {
+		return "", fmt.Errorf("failed to create wireguard directory: %w", err)
+	}
+
+	// Read source config
+	configData, err := os.ReadFile(userConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read config: %w", err)
+	}
+
+	// Write to system location
+	systemPath := filepath.Join(wireguardDir, serverName+".conf")
+	if err := os.WriteFile(systemPath, configData, 0o600); err != nil {
+		return "", fmt.Errorf("failed to write system config: %w", err)
+	}
+
+	return systemPath, nil
 }

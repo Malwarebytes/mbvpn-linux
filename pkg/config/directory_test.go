@@ -179,6 +179,21 @@ func TestTestDirectoryProvider_Integration(t *testing.T) {
 	}
 }
 
+func TestDefaultDirectoryProvider_GetWireguardDir(t *testing.T) {
+	tempDir := t.TempDir()
+	provider := NewDirectoryProvider(tempDir)
+
+	wireguardDir, err := provider.GetWireguardDir()
+	if err != nil {
+		t.Fatalf("GetWireguardDir should succeed: %v", err)
+	}
+
+	expectedDir := filepath.Join(tempDir, "wireguard")
+	if wireguardDir != expectedDir {
+		t.Errorf("Expected wireguard dir '%s', got '%s'", expectedDir, wireguardDir)
+	}
+}
+
 func TestDirectoryProvider_Interface(t *testing.T) {
 	// Verify the implementation satisfies the interface
 	var _ DirectoryProvider = &directoryProvider{}

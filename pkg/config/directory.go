@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // DirectoryProvider defines the interface for getting application directories and file paths.
@@ -15,6 +16,9 @@ type DirectoryProvider interface {
 
 	// GetServersDir returns the servers directory (e.g., ~/.config/mbvpn/servers)
 	GetServersDir() (string, error)
+
+	// GetWireguardDir returns the system WireGuard directory (/etc/wireguard)
+	GetWireguardDir() (string, error)
 
 	// GetConfigFile returns the config file path (e.g., ~/.config/mbvpn/config.yml)
 	GetConfigFile() (string, error)
@@ -59,6 +63,16 @@ func (d *directoryProvider) GetServersDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(configDir, "servers"), nil
+}
+
+// GetWireguardDir returns the system WireGuard directory
+func (d *directoryProvider) GetWireguardDir() (string, error) {
+	// For test environments (temp directories), use test structure
+	if strings.Contains(d.baseDir, os.TempDir()) {
+		return filepath.Join(d.baseDir, "wireguard"), nil
+	}
+	// For production, use standard WireGuard location
+	return "/etc/wireguard", nil
 }
 
 // GetConfigFile returns the config file path

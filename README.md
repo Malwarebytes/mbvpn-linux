@@ -11,7 +11,8 @@ The client is in experimental mode, so it is important to know which parts of th
 - Configuration files in user's config directory:
   - Session info: `~/.config/mbvpn/config.yml`
   - Machine ID: `~/.config/mbvpn/machine-id`
-  - WireGuard configurations: `~/.config/mbvpn/servers/*.conf`
+  - WireGuard configuration storage: `~/.config/mbvpn/servers/*.conf`
+- Active WireGuard configurations are copied to `/etc/wireguard/*.conf` during connection
 - `logout` command removes the configuration files but keeps WireGuard interfaces in the system
 
 ## Installation

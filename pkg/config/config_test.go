@@ -48,6 +48,13 @@ func (m *MockDirectoryProvider) GetServersFile() (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
+func (m *MockDirectoryProvider) GetWireguardDir() (string, error) {
+	if m.ConfigDirError {
+		return "", fmt.Errorf("simulated error")
+	}
+	return "", fmt.Errorf("not implemented")
+}
+
 // Helper function to setup a test environment
 func setupTestConfig(t *testing.T) (*YamlConfigProvider, func()) {
 	// Create a temporary directory

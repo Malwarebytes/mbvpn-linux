@@ -245,6 +245,13 @@ func (m *mockDirectoryProvider) GetServersFile() (string, error) {
 	return "", nil
 }
 
+func (m *mockDirectoryProvider) GetWireguardDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
 func TestDefaultServerStorage_Get(t *testing.T) {
 	dirProvider, cleanup := setupTestDir(t)
 	defer cleanup()

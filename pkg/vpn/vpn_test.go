@@ -62,6 +62,13 @@ func (m *mockDirectoryProvider) GetServersFile() (string, error) {
 	return "", nil
 }
 
+func (m *mockDirectoryProvider) GetWireguardDir() (string, error) {
+	if m.shouldError {
+		return "", os.ErrPermission
+	}
+	return "", nil
+}
+
 func TestGetCountryFlag(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -593,6 +600,76 @@ func TestWriteConfig_Integration(t *testing.T) {
 		if !strings.Contains(configStr, expected) {
 			t.Errorf("Config should contain '%s'\nActual config:\n%s", expected, configStr)
 		}
+	}
+}
+
+func TestCopyConfigToSystem(t *testing.T) {
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
+
+	vpn := &DefaultVpn{dirProvider: dirProvider}
+
+	// First create a config file in user directory
+	server := remote.Server{
+		Hostname:   "test.example.com",
+		IPv4AddrIn: "203.0.113.1",
+		PublicKey:  "server-public-key",
+	}
+
+	userConfigPath, err := vpn.writeConfig("test-server", server, "private-key", "10.0.0.1/32", "2001:db8::1/128")
+	if err != nil {
+		t.Fatalf("writeConfig should succeed: %v", err)
+	}
+
+	// Now copy to system directory
+	systemPath, err := vpn.copyConfigToSystem(userConfigPath, "test-server")
+	if err != nil {
+		t.Fatalf("copyConfigToSystem should succeed: %v", err)
+	}
+
+	// Verify system config file exists
+	if _, err := os.Stat(systemPath); os.IsNotExist(err) {
+		t.Error("System config file should be created")
+	}
+
+	// Verify file contents match
+	userContent, err := os.ReadFile(userConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to read user config file: %v", err)
+	}
+
+	systemContent, err := os.ReadFile(systemPath)
+	if err != nil {
+		t.Fatalf("Failed to read system config file: %v", err)
+	}
+
+	if string(userContent) != string(systemContent) {
+		t.Error("User and system config files should have identical content")
+	}
+
+	// Verify file permissions
+	fileInfo, err := os.Stat(systemPath)
+	if err != nil {
+		t.Fatalf("Failed to stat system config file: %v", err)
+	}
+
+	if fileInfo.Mode().Perm() != 0o600 {
+		t.Errorf("System config file should have 0600 permissions, got %o", fileInfo.Mode().Perm())
+	}
+
+	// Verify directory permissions
+	wireguardDir, err := dirProvider.GetWireguardDir()
+	if err != nil {
+		t.Fatalf("GetWireguardDir should succeed: %v", err)
+	}
+
+	dirInfo, err := os.Stat(wireguardDir)
+	if err != nil {
+		t.Fatalf("Failed to stat wireguard directory: %v", err)
+	}
+
+	if dirInfo.Mode().Perm() != 0o700 {
+		t.Errorf("Wireguard directory should have 0700 permissions, got %o", dirInfo.Mode().Perm())
 	}
 }
 

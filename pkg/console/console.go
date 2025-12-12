@@ -99,13 +99,20 @@ func sanitizeWgConfigPath(cfgPath string, dirProvider config.DirectoryProvider) 
 		return "", fmt.Errorf("config path is not a regular file")
 	}
 
-	// Ensure it's within the expected config directory
+	// Check if it's within the expected config directory OR system wireguard directory
 	expectedBase, err := dirProvider.GetServersDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get servers directory: %w", err)
 	}
-	if !strings.HasPrefix(absPath, expectedBase) {
-		return "", fmt.Errorf("config file must be within %s", expectedBase)
+
+	wireguardBase, wgErr := dirProvider.GetWireguardDir()
+	if wgErr != nil {
+		return "", fmt.Errorf("failed to get wireguard directory: %w", wgErr)
+	}
+
+	// Path must be in either user config directory or system wireguard directory
+	if !strings.HasPrefix(absPath, expectedBase) && !strings.HasPrefix(absPath, wireguardBase) {
+		return "", fmt.Errorf("config file must be within %s or %s", expectedBase, wireguardBase)
 	}
 
 	// Verify file extension (WireGuard configs must be .conf)
