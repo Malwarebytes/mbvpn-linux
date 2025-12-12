@@ -1,7 +1,7 @@
 # Malwarebytes VPN for Linux
 
-[![Version](https://img.shields.io/github/v/release/Malwarebytes/mbvpn-linux?style=flat-square)](https://github.com/Malwarebytes/mbvpn-linux/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Malwarebytes/mbvpn-linux)](https://goreportcard.com/report/github.com/Malwarebytes/mbvpn-linux)
+[![Version](https://img.shields.io/github/v/release/malwarebytes/mbvpn-linux?style=flat-square)](https://github.com/malwarebytes/mbvpn-linux/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/malwarebytes/mbvpn-linux)](https://goreportcard.com/report/github.com/malwarebytes/mbvpn-linux)
 [![License](https://img.shields.io/github/license/malwarebytes/mbvpn-linux?style=flat-square)](LICENSE)
 
 ## IMPORTANT
@@ -29,7 +29,7 @@ WireGuard tools are required for MBVPN to function properly. Install them using 
 Install MBVPN directly using Go's package manager:
 
 ```bash
-go install github.com/malwarebytes/mbvpn-linux@latest
+go install github.com/malwarebytes/mbvpn-linux/cmd/mbvpn@latest
 ```
 
 ### Alternative: Download from Releases
