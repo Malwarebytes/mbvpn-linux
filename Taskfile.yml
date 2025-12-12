@@ -48,6 +48,7 @@ tasks:
         -o {{.BINARY_NAME}}
         -gcflags="{{.DEBUG_GCFLAGS}}"
         -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.DEBUG_LDFLAGS}}"
+        ./cmd/mbvpn
 
   build-release:
     desc: Build release version with optimizations
@@ -57,29 +58,7 @@ tasks:
         {{.RELEASE_BUILDFLAGS}}
         -o {{.BINARY_NAME}}
         -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
-
-  install:
-    desc: Install release version (default)
-    cmds:
-      - task: install-release
-
-  install-debug:
-    desc: Install debug version with debug symbols
-    cmds:
-      - >-
-        go install
-        -gcflags="{{.DEBUG_GCFLAGS}}"
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.DEBUG_LDFLAGS}}"
-        .
-
-  install-release:
-    desc: Install release version with optimizations
-    cmds:
-      - >-
-        go install
-        {{.RELEASE_BUILDFLAGS}}
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
-        .
+        ./cmd/mbvpn
 
   test:
     desc: Run all tests
