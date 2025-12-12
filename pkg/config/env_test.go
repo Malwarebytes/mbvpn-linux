@@ -34,28 +34,28 @@ func TestVerbose(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	// Save original version values and restore them after test
-	origMajor, origMinor, origPatch, origBuild := VersionMajor, VersionMinor, VersionPatch, VersionBuild
+	origMajor, origMinor, origPatch := VersionMajor, VersionMinor, VersionPatch
 	defer func() {
-		VersionMajor, VersionMinor, VersionPatch, VersionBuild = origMajor, origMinor, origPatch, origBuild
+		VersionMajor, VersionMinor, VersionPatch = origMajor, origMinor, origPatch
 	}()
 
 	// Test case 1: Default version values
-	VersionMajor, VersionMinor, VersionPatch, VersionBuild = "1", "2", "3", "4"
-	expected := "1.2.3+4"
+	VersionMajor, VersionMinor, VersionPatch = "1", "2", "3"
+	expected := "1.2.3"
 	if Version() != expected {
 		t.Errorf("Version() = %s, want %s", Version(), expected)
 	}
 
 	// Test case 2: Different version values
-	VersionMajor, VersionMinor, VersionPatch, VersionBuild = "5", "6", "7", "8"
-	expected = "5.6.7+8"
+	VersionMajor, VersionMinor, VersionPatch = "5", "6", "7"
+	expected = "5.6.7"
 	if Version() != expected {
 		t.Errorf("Version() = %s, want %s", Version(), expected)
 	}
 
 	// Test case 3: Zero values
-	VersionMajor, VersionMinor, VersionPatch, VersionBuild = "0", "0", "0", "0"
-	expected = "0.0.0+0"
+	VersionMajor, VersionMinor, VersionPatch = "0", "0", "0"
+	expected = "0.0.0"
 	if Version() != expected {
 		t.Errorf("Version() = %s, want %s", Version(), expected)
 	}

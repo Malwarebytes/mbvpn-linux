@@ -46,7 +46,7 @@ func TestNewDefaultHolocron(t *testing.T) {
 
 	defaultHolocron, ok := holocron.(*DefaultHolocron)
 	assert.True(t, ok, "Should return DefaultHolocron implementation")
-	assert.Equal(t, config.HolocronUrl, defaultHolocron.baseUrl)
+	assert.Equal(t, config.GetHolocronUrl(), defaultHolocron.baseUrl)
 	assert.Equal(t, mIdProvider, defaultHolocron.mIdProvider)
 }
 

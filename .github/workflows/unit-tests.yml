@@ -4,21 +4,21 @@ permissions:
 
 on:
   push:
-    branches: [ trunk ]
+    branches: [trunk]
   pull_request:
-    branches: [ trunk ]
+    branches: [trunk]
 
 jobs:
   test:
     name: Run Unit Tests
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
           cache: true
 
       - name: Install dependencies

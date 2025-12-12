@@ -43,7 +43,7 @@ type DefaultHolocron struct {
 
 func NewDefaultHolocron(mIdProvider config.MachineIdProvider) Holocron {
 	return &DefaultHolocron{
-		baseUrl:     config.HolocronUrl,
+		baseUrl:     config.GetHolocronUrl(),
 		mIdProvider: mIdProvider,
 	}
 }

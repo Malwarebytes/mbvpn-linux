@@ -20,19 +20,15 @@ func TestVersionCommand(t *testing.T) {
 		t.Errorf("Version command failed with error: %v", err)
 	}
 
-	// Check that output contains version information
-	if !strings.Contains(output, "Version:") {
-		t.Errorf("Expected 'Version:' in output, got: %s", output)
+	// Check that output starts with "v" and contains version number
+	output = strings.TrimSpace(output)
+	if !strings.HasPrefix(output, "v") {
+		t.Errorf("Expected output to start with 'v', got: %s", output)
 	}
 
-	// Check that output contains environment information
-	if !strings.Contains(output, "Environment:") {
-		t.Errorf("Expected 'Environment:' in output, got: %s", output)
-	}
-
-	// Check that output contains debug mode information
-	if !strings.Contains(output, "Debug Mode:") {
-		t.Errorf("Expected 'Debug Mode:' in output, got: %s", output)
+	// Check that it contains dots (semantic version format)
+	if !strings.Contains(output, ".") {
+		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
 	}
 }
 
@@ -48,39 +44,23 @@ func TestVersionCommandFormat(t *testing.T) {
 		t.Errorf("Version command failed with error: %v", err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(output), "\n")
+	output = strings.TrimSpace(output)
 
-	// Should have exactly 4 lines of output
-	if len(lines) != 4 {
-		t.Errorf("Expected 4 lines of output, got %d lines: %s", len(lines), output)
+	// Should be single line output
+	if strings.Contains(output, "\n") {
+		t.Errorf("Expected single line output, got multiple lines: %s", output)
 	}
 
-	// Check version format (should be like "Version: 0.0.1+0")
-	versionLine := lines[0]
-	if !strings.HasPrefix(versionLine, "Version: ") {
-		t.Errorf("First line should start with 'Version: ', got: %s", versionLine)
+	// Should start with "v"
+	if !strings.HasPrefix(output, "v") {
+		t.Errorf("Expected version to start with 'v', got: %s", output)
 	}
 
-	versionValue := strings.TrimPrefix(versionLine, "Version: ")
-	if !strings.Contains(versionValue, ".") || !strings.Contains(versionValue, "+") {
-		t.Errorf("Version should be in format 'major.minor.patch+build', got: %s", versionValue)
-	}
-
-	// Check environment line
-	envLine := lines[1]
-	if !strings.HasPrefix(envLine, "Environment: ") {
-		t.Errorf("Second line should start with 'Environment: ', got: %s", envLine)
-	}
-
-	// Check debug mode line
-	debugLine := lines[3]
-	if !strings.HasPrefix(debugLine, "Debug Mode: ") {
-		t.Errorf("Fourth line should start with 'Debug Mode: ', got: %s", debugLine)
-	}
-
-	debugValue := strings.TrimPrefix(debugLine, "Debug Mode: ")
-	if debugValue != "true" && debugValue != "false" {
-		t.Errorf("Debug Mode should be 'true' or 'false', got: %s", debugValue)
+	// Should be in format "vX.Y.Z"
+	versionValue := strings.TrimPrefix(output, "v")
+	parts := strings.Split(versionValue, ".")
+	if len(parts) != 3 {
+		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
 	}
 }
 
@@ -96,17 +76,17 @@ func TestVersionCommandWithDebugFlag(t *testing.T) {
 		t.Errorf("Version command with debug flag failed with error: %v", err)
 	}
 
-	// Should still contain all version information
-	expectedFields := []string{"Version:", "Environment:", "Debug Mode:"}
-	for _, field := range expectedFields {
-		if !strings.Contains(output, field) {
-			t.Errorf("Expected '%s' in output, got: %s", field, output)
-		}
+	output = strings.TrimSpace(output)
+
+	// When debug flag is used, there may be debug messages before version
+	// Check if output contains version format vX.Y.Z
+	if !strings.Contains(output, "v0.0.") {
+		t.Errorf("Expected version format 'vX.Y.Z' in output, got: %s", output)
 	}
 
-	// When debug flag is used, debug mode should be true
-	if !strings.Contains(output, "Debug Mode: true") {
-		t.Errorf("Expected 'Debug Mode: true' when using --debug flag, got: %s", output)
+	// Should show debug mode indicator when --debug is used
+	if !strings.Contains(output, "=== Running in debug mode ===") {
+		t.Errorf("Expected debug mode indicator in output, got: %s", output)
 	}
 }
 

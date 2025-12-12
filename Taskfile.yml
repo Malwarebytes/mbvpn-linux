@@ -1,30 +1,7 @@
 version: "3"
 
-dotenv: [".env"]
-
 vars:
   BINARY_NAME: mbvpn
-  GO_PKG: github.com/malwarebytes/mbvpn-linux
-  VERSION_MAJOR:
-    sh: echo "${VERSION_MAJOR:-0}"
-  VERSION_MINOR:
-    sh: echo "${VERSION_MINOR:-0}"
-  VERSION_PATCH:
-    sh: echo "${VERSION_PATCH:-1}"
-  VERSION_BUILD:
-    sh: echo "${VERSION_BUILD:-0}"
-
-  # Common ldflags
-  COMMON_LDFLAGS: >-
-    -X '{{.GO_PKG}}/pkg/config.VersionMajor={{.VERSION_MAJOR}}'
-    -X '{{.GO_PKG}}/pkg/config.VersionMinor={{.VERSION_MINOR}}'
-    -X '{{.GO_PKG}}/pkg/config.VersionPatch={{.VERSION_PATCH}}'
-    -X '{{.GO_PKG}}/pkg/config.VersionBuild={{.VERSION_BUILD}}'
-
-  # Environment ldflags
-  ENV_LDFLAGS: >-
-    -X '{{.GO_PKG}}/pkg/config.BuildEnv=production'
-    -X '{{.GO_PKG}}/pkg/config.HolocronUrl={{.MBVPN_HOLOCRON_URL}}'
 
   # Debug flags
   DEBUG_GCFLAGS: -N -l
@@ -45,7 +22,6 @@ tasks:
         go build {{.GOFLAGS}}
         -o {{.BINARY_NAME}}
         -gcflags="{{.DEBUG_GCFLAGS}}"
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}}"
         ./cmd/mbvpn
 
   build-release:
@@ -55,7 +31,6 @@ tasks:
         go build {{.GOFLAGS}}
         {{.RELEASE_BUILDFLAGS}}
         -o {{.BINARY_NAME}}
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}}"
         ./cmd/mbvpn
 
   test:

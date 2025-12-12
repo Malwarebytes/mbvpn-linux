@@ -190,8 +190,8 @@ func TestRootCommandGlobalFlagsWithSubcommand(t *testing.T) {
 		t.Errorf("Expected debug mode indicator in output, got: %s", output)
 	}
 	
-	// Should show version information
-	if !strings.Contains(output, "Version:") {
+	// Should show version information (format: vX.Y.Z)
+	if !strings.Contains(output, "v0.0.") {
 		t.Errorf("Expected version information in output, got: %s", output)
 	}
 }

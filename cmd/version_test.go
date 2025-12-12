@@ -47,46 +47,26 @@ func TestVersionCommandOutput(t *testing.T) {
 
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
-	output := buf.String()
+	output := strings.TrimSpace(buf.String())
 
-	// Verify output contains expected fields
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 3 {
-		t.Errorf("Expected 4 lines of output, got %d", len(lines))
+	// Verify output is single line
+	if strings.Contains(output, "\n") {
+		t.Errorf("Expected single line output, got multiple lines: %s", output)
 	}
 
-	expectedPrefixes := []string{
-		"Version: ",
-		"Environment: ",
-		"Debug Mode: ",
+	// Verify output starts with "v"
+	if !strings.HasPrefix(output, "v") {
+		t.Errorf("Expected output to start with 'v', got: %s", output)
 	}
 
-	for i, prefix := range expectedPrefixes {
-		if i >= len(lines) || !strings.HasPrefix(lines[i], prefix) {
-			t.Errorf("Line %d should start with '%s', got '%s'", i+1, prefix, lines[i])
-		}
+	// Verify version format matches "vX.Y.Z"
+	expectedVersion := "v" + config.Version()
+	if output != expectedVersion {
+		t.Errorf("Expected version '%s', got '%s'", expectedVersion, output)
 	}
 
-	// Verify version format (should be in format "0.0.1+0")
-	versionLine := lines[0]
-	versionValue := strings.TrimPrefix(versionLine, "Version: ")
-	expectedVersion := config.Version()
-	if versionValue != expectedVersion {
-		t.Errorf("Expected version '%s', got '%s'", expectedVersion, versionValue)
-	}
-
-	// Verify environment value
-	envLine := lines[1]
-	envValue := strings.TrimPrefix(envLine, "Environment: ")
-	if envValue != config.BuildEnv {
-		t.Errorf("Expected environment '%s', got '%s'", config.BuildEnv, envValue)
-	}
-
-	// Verify debug mode value
-	debugLine := lines[2]
-	debugValue := strings.TrimPrefix(debugLine, "Debug Mode: ")
-	expectedDebug := "true" // Since we're in testing mode, Debug() returns true
-	if debugValue != expectedDebug {
-		t.Errorf("Expected debug mode '%s', got '%s'", expectedDebug, debugValue)
+	// Verify it contains dots (semantic version format)
+	if !strings.Contains(output, ".") {
+		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
 	}
 }

@@ -16,33 +16,178 @@ on:
         type: boolean
 
 jobs:
-  create-release:
+  validate-release:
     runs-on: ubuntu-latest
     outputs:
-      MAJOR: ${{ steps.version.outputs.MAJOR }}
-      MINOR: ${{ steps.version.outputs.MINOR }}
-      PATCH: ${{ steps.version.outputs.PATCH }}
+      major: ${{ steps.extract-version.outputs.major }}
+      minor: ${{ steps.extract-version.outputs.minor }}
+      patch: ${{ steps.extract-version.outputs.patch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract version components
-        id: version
+      - name: Validate version format and extract components
+        id: extract-version
         run: |
           VERSION="${{ github.event.inputs.version }}"
+
+          # Validate format (must be vX.Y.Z)
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format. Must be vX.Y.Z"
+            echo "::error::Invalid version format. Must be vX.Y.Z (e.g., v0.1.0)"
             exit 1
           fi
+
+          # Extract components
           VERSION_NUM="${VERSION#v}"
           IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
-          echo "MAJOR=$MAJOR" >> $GITHUB_OUTPUT
-          echo "MINOR=$MINOR" >> $GITHUB_OUTPUT
-          echo "PATCH=$PATCH" >> $GITHUB_OUTPUT
-          echo "VERSION_MAJOR=$MAJOR" >> $GITHUB_ENV
-          echo "VERSION_MINOR=$MINOR" >> $GITHUB_ENV
-          echo "VERSION_PATCH=$PATCH" >> $GITHUB_ENV
-          echo "VERSION_BUILD=${{ github.run_number }}" >> $GITHUB_ENV
+
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+
+      - name: Extract and validate source code version
+        run: |
+          # Parse version from pkg/config/env.go
+          MAJOR=$(grep -E '^\s*VersionMajor\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
+          MINOR=$(grep -E '^\s*VersionMinor\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
+          PATCH=$(grep -E '^\s*VersionPatch\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
+
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+            echo "::error::Failed to extract version from pkg/config/env.go"
+            exit 1
+          fi
+
+          SOURCE_VERSION="$MAJOR.$MINOR.$PATCH"
+          INPUT_VERSION="${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}"
+
+          echo "Workflow input version: $INPUT_VERSION"
+          echo "Source code version: $SOURCE_VERSION"
+
+          if [ "$INPUT_VERSION" != "$SOURCE_VERSION" ]; then
+            echo "::error::Version mismatch!"
+            echo "::error::Workflow input: v$INPUT_VERSION"
+            echo "::error::Source code (pkg/config/env.go): $SOURCE_VERSION"
+            echo "::error::Please update VersionMajor, VersionMinor, VersionPatch in pkg/config/env.go before releasing."
+            exit 1
+          fi
+
+          echo "✓ Version validation passed: $SOURCE_VERSION"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Install Task
+        uses: go-task/setup-task@v1
+
+      - name: Run unit tests
+        run: |
+          echo "Running unit tests..."
+          task test-unit
+          echo "✓ Unit tests passed"
+
+      - name: Build release binary
+        run: |
+          echo "Building release binary..."
+          task build-release
+
+          if [ ! -f mbvpn ]; then
+            echo "::error::Build failed - mbvpn binary not found"
+            exit 1
+          fi
+
+          echo "✓ Build successful"
+
+      - name: Validate binary version output
+        run: |
+          echo "Testing binary version output..."
+
+          # Execute version command and capture output
+          BINARY_OUTPUT=$(./mbvpn version)
+
+          # Expected output is single line: v0.0.9
+          EXPECTED_VERSION="${{ github.event.inputs.version }}"
+
+          # Trim any whitespace
+          BINARY_OUTPUT=$(echo "$BINARY_OUTPUT" | tr -d '[:space:]')
+          EXPECTED_VERSION=$(echo "$EXPECTED_VERSION" | tr -d '[:space:]')
+
+          echo "Binary output: $BINARY_OUTPUT"
+          echo "Expected version: $EXPECTED_VERSION"
+
+          if [ "$BINARY_OUTPUT" != "$EXPECTED_VERSION" ]; then
+            echo "::error::Binary version mismatch!"
+            echo "::error::Expected: $EXPECTED_VERSION"
+            echo "::error::Got: $BINARY_OUTPUT"
+            exit 1
+          fi
+
+          echo "✓ Binary version validation passed"
+
+      - name: Validation summary
+        run: |
+          echo "======================================"
+          echo "Release Validation Summary"
+          echo "======================================"
+          echo "✓ Version format validated"
+          echo "✓ Source code version matches input"
+          echo "✓ Unit tests passed"
+          echo "✓ Build successful"
+          echo "✓ Binary version output validated"
+          echo ""
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Ready to create release"
+          echo "======================================"
+
+  create-release:
+    needs: validate-release
+    runs-on: ubuntu-latest
+    outputs:
+      MAJOR: ${{ needs.validate-release.outputs.major }}
+      MINOR: ${{ needs.validate-release.outputs.minor }}
+      PATCH: ${{ needs.validate-release.outputs.patch }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Release Notes
+        id: release-notes
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          # Start building release notes
+          cat > release_notes.md << 'EOF'
+          ## What's Changed
+
+          EOF
+
+          # If we have a previous tag, generate changelog
+          if [ -n "$PREVIOUS_TAG" ]; then
+            # Add commit range link
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${VERSION}" >> release_notes.md
+            echo "" >> release_notes.md
+
+            # Get commits since last tag
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"* %s by @%an in %H" --no-merges > commits.txt
+
+            # Extract issue references and create proper links
+            while IFS= read -r line; do
+              # Replace commit hash with link
+              line=$(echo "$line" | sed -E "s/ in ([0-9a-f]{40})/ in [\1](https:\/\/github.com\/${{ github.repository }}\/commit\/\1)/")
+              # Replace issue references with links
+              line=$(echo "$line" | sed -E "s/#([0-9]+)/[#\1](https:\/\/github.com\/${{ github.repository }}\/issues\/\1)/g")
+              echo "$line" >> release_notes.md
+            done < commits.txt
+          else
+            echo "Initial release of MBVPN $VERSION" >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo '```' >> release_notes.md
 
       - name: Create GitHub Release
         env:
@@ -50,11 +195,11 @@ jobs:
         run: |
           gh release create ${{ github.event.inputs.version }} \
             --title "MBVPN ${{ github.event.inputs.version }}" \
-            --notes "MBVPN Release ${{ github.event.inputs.version }}"
+            --notes-file release_notes.md
 
   build-binaries:
     needs: create-release
-    runs-on: [self-hosted, ubuntu-22.04-2core]
+    runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.is_production == 'true' && 'prod' || 'stage' }}
     strategy:
       matrix:
@@ -76,7 +221,6 @@ jobs:
 
       - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
         env:
-          MBVPN_HOLOCRON_URL: ${{ vars.MBVPN_HOLOCRON_URL }}
           VERSION_MAJOR: ${{ needs.create-release.outputs.MAJOR }}
           VERSION_MINOR: ${{ needs.create-release.outputs.MINOR }}
           VERSION_PATCH: ${{ needs.create-release.outputs.PATCH }}
