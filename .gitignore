@@ -28,4 +28,4 @@ go.work.sum
 build/
 
 # Main binary
-mbvpn
+/mbvpn
