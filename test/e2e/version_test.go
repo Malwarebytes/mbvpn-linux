@@ -30,11 +30,6 @@ func TestVersionCommand(t *testing.T) {
 		t.Errorf("Expected 'Environment:' in output, got: %s", output)
 	}
 
-	// Check that output contains build type information
-	if !strings.Contains(output, "Build Type:") {
-		t.Errorf("Expected 'Build Type:' in output, got: %s", output)
-	}
-
 	// Check that output contains debug mode information
 	if !strings.Contains(output, "Debug Mode:") {
 		t.Errorf("Expected 'Debug Mode:' in output, got: %s", output)
@@ -102,7 +97,7 @@ func TestVersionCommandWithDebugFlag(t *testing.T) {
 	}
 
 	// Should still contain all version information
-	expectedFields := []string{"Version:", "Environment:", "Build Type:", "Debug Mode:"}
+	expectedFields := []string{"Version:", "Environment:", "Debug Mode:"}
 	for _, field := range expectedFields {
 		if !strings.Contains(output, field) {
 			t.Errorf("Expected '%s' in output, got: %s", field, output)
@@ -128,7 +123,7 @@ func TestVersionCommandWithHelp(t *testing.T) {
 	}
 
 	// Should show help text
-	if !strings.Contains(output, "Display the application version, build environment and build type") {
+	if !strings.Contains(output, "Display the application version") {
 		t.Errorf("Expected help text in output, got: %s", output)
 	}
 

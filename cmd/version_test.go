@@ -21,7 +21,7 @@ func TestNewVersionCommand(t *testing.T) {
 		t.Errorf("Expected Short to be 'Display version information', got '%s'", cmd.Short)
 	}
 
-	expectedLong := "Display the application version, build environment and build type."
+	expectedLong := "Display the application version."
 	if cmd.Long != expectedLong {
 		t.Errorf("Expected Long to be '%s', got '%s'", expectedLong, cmd.Long)
 	}
@@ -51,14 +51,13 @@ func TestVersionCommandOutput(t *testing.T) {
 
 	// Verify output contains expected fields
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 4 {
+	if len(lines) != 3 {
 		t.Errorf("Expected 4 lines of output, got %d", len(lines))
 	}
 
 	expectedPrefixes := []string{
 		"Version: ",
 		"Environment: ",
-		"Build Type: ",
 		"Debug Mode: ",
 	}
 
@@ -84,7 +83,7 @@ func TestVersionCommandOutput(t *testing.T) {
 	}
 
 	// Verify debug mode value
-	debugLine := lines[3]
+	debugLine := lines[2]
 	debugValue := strings.TrimPrefix(debugLine, "Debug Mode: ")
 	expectedDebug := "true" // Since we're in testing mode, Debug() returns true
 	if debugValue != expectedDebug {

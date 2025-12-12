@@ -15,7 +15,7 @@ func NewVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Display version information",
-		Long:  `Display the application version, build environment and build type.`,
+		Long:  `Display the application version.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("Version: %s\n", config.Version())
 			fmt.Printf("Environment: %s\n", config.BuildEnv)
