@@ -89,16 +89,6 @@ func sanitizeWgConfigPath(cfgPath string, dirProvider config.DirectoryProvider) 
 		return "", fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
 
-	// Verify the file exists and is a regular file
-	fileInfo, err := os.Stat(absPath)
-	if err != nil {
-		return "", fmt.Errorf("config file not accessible: %w", err)
-	}
-
-	if !fileInfo.Mode().IsRegular() {
-		return "", fmt.Errorf("config path is not a regular file")
-	}
-
 	// Check if it's within the expected config directory OR system wireguard directory
 	expectedBase, err := dirProvider.GetServersDir()
 	if err != nil {
@@ -111,8 +101,26 @@ func sanitizeWgConfigPath(cfgPath string, dirProvider config.DirectoryProvider) 
 	}
 
 	// Path must be in either user config directory or system wireguard directory
-	if !strings.HasPrefix(absPath, expectedBase) && !strings.HasPrefix(absPath, wireguardBase) {
+	inUserDir := strings.HasPrefix(absPath, expectedBase)
+	inSystemDir := strings.HasPrefix(absPath, wireguardBase)
+
+	if !inUserDir && !inSystemDir {
 		return "", fmt.Errorf("config file must be within %s or %s", expectedBase, wireguardBase)
+	}
+
+	// Verify the file exists and is a regular file
+	// For system directory (/etc/wireguard), skip this check as regular users
+	// may not have permission to stat root-owned files with 0600 permissions.
+	// wg-quick will run with sudo and can access them.
+	if inUserDir {
+		fileInfo, err := os.Stat(absPath)
+		if err != nil {
+			return "", fmt.Errorf("config file not accessible: %w", err)
+		}
+
+		if !fileInfo.Mode().IsRegular() {
+			return "", fmt.Errorf("config path is not a regular file")
+		}
 	}
 
 	// Verify file extension (WireGuard configs must be .conf)

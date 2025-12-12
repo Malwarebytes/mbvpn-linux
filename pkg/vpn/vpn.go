@@ -3,6 +3,7 @@ package vpn
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -426,28 +427,54 @@ func (vpn *DefaultVpn) saveWgConfig(serverName string, configContent string) (st
 }
 
 // copyConfigToSystem copies a config file from user directory to /etc/wireguard
-// This requires sudo permissions and is called during connection operations.
+// Uses sudo for operations requiring elevated privileges in production.
+// In test environments, uses direct file operations.
 func (vpn *DefaultVpn) copyConfigToSystem(userConfigPath, serverName string) (string, error) {
 	wireguardDir, err := vpn.dirProvider.GetWireguardDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get wireguard directory: %w", err)
 	}
 
-	// Ensure /etc/wireguard exists with proper permissions
-	if err := os.MkdirAll(wireguardDir, 0o700); err != nil {
-		return "", fmt.Errorf("failed to create wireguard directory: %w", err)
-	}
-
-	// Read source config
-	configData, err := os.ReadFile(userConfigPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read config: %w", err)
-	}
-
-	// Write to system location
 	systemPath := filepath.Join(wireguardDir, serverName+".conf")
-	if err := os.WriteFile(systemPath, configData, 0o600); err != nil {
-		return "", fmt.Errorf("failed to write system config: %w", err)
+
+	// Detect test environment (same logic as GetWireguardDir)
+	isTestEnv := strings.Contains(wireguardDir, os.TempDir())
+
+	if isTestEnv {
+		// Test environment - use direct file operations
+		if err := os.MkdirAll(wireguardDir, 0o700); err != nil {
+			return "", fmt.Errorf("failed to create wireguard directory: %w", err)
+		}
+
+		configData, err := os.ReadFile(userConfigPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read config: %w", err)
+		}
+
+		if err := os.WriteFile(systemPath, configData, 0o600); err != nil {
+			return "", fmt.Errorf("failed to write system config: %w", err)
+		}
+	} else {
+		// Production environment - use sudo commands
+		cmd := exec.Command("sudo", "mkdir", "-p", wireguardDir)
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to create wireguard directory: %w", err)
+		}
+
+		cmd = exec.Command("sudo", "chmod", "700", wireguardDir)
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to set directory permissions: %w", err)
+		}
+
+		cmd = exec.Command("sudo", "cp", userConfigPath, systemPath)
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to copy config to system: %w", err)
+		}
+
+		cmd = exec.Command("sudo", "chmod", "600", systemPath)
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to set config file permissions: %w", err)
+		}
 	}
 
 	return systemPath, nil
