@@ -19,7 +19,6 @@ func NewVersionCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("Version: %s\n", config.Version())
 			fmt.Printf("Environment: %s\n", config.BuildEnv)
-			fmt.Printf("Build Type: %s\n", config.BuildType)
 			fmt.Printf("Debug Mode: %t\n", config.Debug())
 		},
 	}

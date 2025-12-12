@@ -83,13 +83,6 @@ func TestVersionCommandOutput(t *testing.T) {
 		t.Errorf("Expected environment '%s', got '%s'", config.BuildEnv, envValue)
 	}
 
-	// Verify build type value
-	buildTypeLine := lines[2]
-	buildTypeValue := strings.TrimPrefix(buildTypeLine, "Build Type: ")
-	if buildTypeValue != config.BuildType {
-		t.Errorf("Expected build type '%s', got '%s'", config.BuildType, buildTypeValue)
-	}
-
 	// Verify debug mode value
 	debugLine := lines[3]
 	debugValue := strings.TrimPrefix(debugLine, "Debug Mode: ")

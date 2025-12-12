@@ -8,9 +8,8 @@ import (
 var (
 	DebugFlag   bool
 	BuildEnv    string
-	BuildType   string
 	HolocronUrl string
-	
+
 	// Version information
 	VersionMajor = "0"
 	VersionMinor = "0"

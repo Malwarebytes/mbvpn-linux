@@ -74,20 +74,13 @@ jobs:
       - name: Install Task
         uses: go-task/setup-task@v1
 
-      - name: Set version in environment
-        run: |
-          export VERSION_MAJOR=${{ needs.create-release.outputs.MAJOR }}
-          export VERSION_MINOR=${{ needs.create-release.outputs.MINOR }}
-          export VERSION_PATCH=${{ needs.create-release.outputs.PATCH }}
-          export VERSION_BUILD=${{ github.run_number }}
-          echo "VERSION_MAJOR=$VERSION_MAJOR" >> $GITHUB_ENV
-          echo "VERSION_MINOR=$VERSION_MINOR" >> $GITHUB_ENV
-          echo "VERSION_PATCH=$VERSION_PATCH" >> $GITHUB_ENV
-          echo "VERSION_BUILD=$VERSION_BUILD" >> $GITHUB_ENV
-
       - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
         env:
           MBVPN_HOLOCRON_URL: ${{ vars.MBVPN_HOLOCRON_URL }}
+          VERSION_MAJOR: ${{ needs.create-release.outputs.MAJOR }}
+          VERSION_MINOR: ${{ needs.create-release.outputs.MINOR }}
+          VERSION_PATCH: ${{ needs.create-release.outputs.PATCH }}
+          VERSION_BUILD: ${{ github.run_number }}
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} task build-release
           mv mbvpn ${{ env.BINARY_NAME }}

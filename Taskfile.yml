@@ -27,11 +27,9 @@ vars:
     -X '{{.GO_PKG}}/pkg/config.HolocronUrl={{.MBVPN_HOLOCRON_URL}}'
 
   # Debug flags
-  DEBUG_LDFLAGS: -X '{{.GO_PKG}}/pkg/config.BuildType=debug'
   DEBUG_GCFLAGS: -N -l
 
   # Release flags
-  RELEASE_LDFLAGS: -X '{{.GO_PKG}}/pkg/config.BuildType=release'
   RELEASE_BUILDFLAGS: -trimpath
 
 tasks:
@@ -47,7 +45,7 @@ tasks:
         go build {{.GOFLAGS}}
         -o {{.BINARY_NAME}}
         -gcflags="{{.DEBUG_GCFLAGS}}"
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.DEBUG_LDFLAGS}}"
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}}"
         ./cmd/mbvpn
 
   build-release:
@@ -57,7 +55,7 @@ tasks:
         go build {{.GOFLAGS}}
         {{.RELEASE_BUILDFLAGS}}
         -o {{.BINARY_NAME}}
-        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}} {{.RELEASE_LDFLAGS}}"
+        -ldflags "{{.COMMON_LDFLAGS}} {{.ENV_LDFLAGS}}"
         ./cmd/mbvpn
 
   test:
