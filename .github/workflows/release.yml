@@ -189,13 +189,14 @@ jobs:
           echo "" >> release_notes.md
           echo '```' >> release_notes.md
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (Draft)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create ${{ github.event.inputs.version }} \
             --title "MBVPN ${{ github.event.inputs.version }}" \
-            --notes-file release_notes.md
+            --notes-file release_notes.md \
+            --draft
 
   build-binaries:
     needs: create-release
