@@ -2,16 +2,15 @@ package vpn
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
+	"net"
 	"strings"
 
 	"github.com/malwarebytes/mbvpn-linux/pkg/config"
-	"github.com/malwarebytes/mbvpn-linux/pkg/console"
 	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
 	"github.com/malwarebytes/mbvpn-linux/pkg/output"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 	"github.com/malwarebytes/mbvpn-linux/pkg/servers"
+	"github.com/malwarebytes/mbvpn-linux/pkg/wireguard"
 	log "github.com/sirupsen/logrus"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -28,15 +27,22 @@ type DefaultVpn struct {
 	holocron      remote.Holocron
 	serverStorage servers.ServerStorage
 	dirProvider   config.DirectoryProvider
+	wgManager     wireguard.Manager
 }
 
-func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage, dirProvider config.DirectoryProvider) Vpn {
+func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage, dirProvider config.DirectoryProvider) (Vpn, error) {
+	mgr, err := wireguard.NewManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create wireguard manager: %w", err)
+	}
+
 	return &DefaultVpn{
 		cfgProvider:   cfgProvider,
 		holocron:      holocron,
 		serverStorage: serverStorage,
 		dirProvider:   dirProvider,
-	}
+		wgManager:     mgr,
+	}, nil
 }
 
 func (vpn *DefaultVpn) Servers(showCities bool, showServers bool) error {
@@ -235,9 +241,9 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		return errors.NewUserError(fmt.Sprintf("Server %s not found", cfg), errors.ErrNotFound)
 	}
 
-	cfgName := strings.Split(server.Hostname, ".")[0]
+	ifaceName := sanitizeInterfaceName(server.Hostname)
 
-	output.PrintMsg(fmt.Sprintf("Connecting to %s...", cfgName), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("Connecting to %s...", ifaceName), output.MsgOutput)
 
 	keyData, err := vpn.cfgProvider.Get()
 	if err != nil || keyData.PrivateKey == "" || keyData.PublicKey == "" {
@@ -263,47 +269,132 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		return errors.NewNetworkError("register public key", err)
 	}
 
-	cfgPath, err := vpn.writeConfig(cfgName, *server, keyData.PrivateKey, ipAddrs.IpV4, ipAddrs.IpV6)
-	if err != nil {
-		return errors.NewVPNError("write config", err)
+	// Create WireGuard interface
+	if err := vpn.wgManager.CreateInterface(ifaceName); err != nil {
+		// If interface already exists, try to remove it first
+		if strings.Contains(err.Error(), "already exists") {
+			log.Infof("Interface %s already exists, removing and recreating", ifaceName)
+			if rmErr := vpn.wgManager.RemoveInterface(ifaceName); rmErr != nil {
+				return errors.NewVPNError("remove existing interface", rmErr)
+			}
+			if err := vpn.wgManager.CreateInterface(ifaceName); err != nil {
+				return errors.NewVPNError("create interface", err)
+			}
+		} else {
+			return errors.NewVPNError("create interface", err)
+		}
 	}
 
-	output.PrintMsg(fmt.Sprintf("Calling 'wg-quick up %s'", cfgPath), output.MsgOutput)
-	err = console.WgUp(cfgPath, vpn.dirProvider)
-	if err != nil {
-		return errors.NewVPNError("connect", err)
+	// Determine port from server's port ranges, fallback to 51820
+	port := 51820
+	if len(server.PortRanges) > 0 {
+		port = server.PortRanges[0].From
+	}
+
+	// Configure WireGuard
+	wgCfg := wireguard.DeviceConfig{
+		PrivateKey: keyData.PrivateKey,
+		Peers: []wireguard.PeerConfig{{
+			PublicKey:  server.PublicKey,
+			Endpoint:   fmt.Sprintf("%s:%d", server.IPv4AddrIn, port),
+			AllowedIPs: []string{"0.0.0.0/0", "::/0"},
+		}},
+	}
+	if err := vpn.wgManager.Configure(ifaceName, wgCfg); err != nil {
+		vpn.wgManager.RemoveInterface(ifaceName) // Cleanup on failure
+		return errors.NewVPNError("configure device", err)
+	}
+
+	// Assign addresses
+	addrs := []string{ipAddrs.IpV4, ipAddrs.IpV6}
+	if err := vpn.wgManager.AssignAddresses(ifaceName, addrs); err != nil {
+		vpn.wgManager.RemoveInterface(ifaceName)
+		return errors.NewVPNError("assign addresses", err)
+	}
+
+	// Bring interface up
+	if err := vpn.wgManager.SetInterfaceUp(ifaceName); err != nil {
+		vpn.wgManager.RemoveInterface(ifaceName)
+		return errors.NewVPNError("set interface up", err)
+	}
+
+	// Parse endpoint IP for routing
+	endpointIP := net.ParseIP(server.IPv4AddrIn)
+
+	// Add routes
+	if err := vpn.wgManager.AddRoutes(ifaceName, []string{"0.0.0.0/0", "::/0"}, endpointIP); err != nil {
+		vpn.wgManager.RemoveInterface(ifaceName)
+		return errors.NewVPNError("add routes", err)
 	}
 
 	output.PrintMsg("Connected.", output.MsgSuccess)
 	return nil
 }
 
+// sanitizeInterfaceName converts a server hostname to a valid interface name
+// Linux interface names are limited to 15 characters
+func sanitizeInterfaceName(hostname string) string {
+	// Extract just the server name part (before the first dot)
+	name := strings.Split(hostname, ".")[0]
+
+	// Replace any non-alphanumeric characters with empty string
+	var sanitized strings.Builder
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			sanitized.WriteRune(r)
+		}
+	}
+
+	result := sanitized.String()
+
+	// Truncate to 15 characters (Linux interface name limit)
+	if len(result) > 15 {
+		result = result[:15]
+	}
+
+	return result
+}
+
 func (vpn *DefaultVpn) Disconnect(cfg string) error {
 	if cfg == "" {
-		servers, err := getConnectedServers()
+		devices, err := vpn.wgManager.ListDevices()
 		if err != nil {
-			return errors.NewVPNError("get connected servers", err)
+			return errors.NewVPNError("list devices", err)
 		}
 
-		for _, s := range servers {
-			err := vpn.Disconnect(s)
-			if err != nil {
-				// Continue trying to disconnect other servers even if one fails
-				log.Errorf("Failed to disconnect from %s: %v", s, err)
+		if len(devices) == 0 {
+			output.PrintMsg("No active connections.", output.MsgOutput)
+			return nil
+		}
+
+		for _, name := range devices {
+			output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", name), output.MsgOutput)
+			if err := vpn.wgManager.RemoveInterface(name); err != nil {
+				log.Errorf("Failed to disconnect from %s: %v", name, err)
+			} else {
+				output.PrintMsg(fmt.Sprintf("Disconnected from %s.", name), output.MsgSuccess)
 			}
 		}
 		return nil
 	}
 
-	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", cfg), output.MsgOutput)
-
-	cfgDir, err := vpn.dirProvider.GetServersDir()
+	// If a specific server name is provided, find and disconnect it
+	server, err := vpn.serverStorage.GetByServerName(cfg)
 	if err != nil {
-		return errors.NewConfigError("get servers directory", err)
+		return errors.NewConfigError("get server by name", err)
 	}
 
-	err = console.WgDown(filepath.Join(cfgDir, cfg+".conf"), vpn.dirProvider)
-	if err != nil {
+	var ifaceName string
+	if server != nil {
+		ifaceName = sanitizeInterfaceName(server.Hostname)
+	} else {
+		// Maybe they provided the interface name directly
+		ifaceName = sanitizeInterfaceName(cfg)
+	}
+
+	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", ifaceName), output.MsgOutput)
+
+	if err := vpn.wgManager.RemoveInterface(ifaceName); err != nil {
 		return errors.NewVPNError("disconnect", err)
 	}
 
@@ -312,16 +403,32 @@ func (vpn *DefaultVpn) Disconnect(cfg string) error {
 }
 
 func (vpn *DefaultVpn) Status() error {
-	servers, err := getConnectedServers()
+	devices, err := vpn.wgManager.ListDevices()
 	if err != nil {
 		return errors.NewVPNError("get status", err)
 	}
 
-	if len(servers) == 0 {
+	if len(devices) == 0 {
 		output.PrintMsg("No active connections.", output.MsgOutput)
 	} else {
-		for _, s := range servers {
-			output.PrintMsg(fmt.Sprintf("Connected to: %s", s), output.MsgSuccess)
+		for _, name := range devices {
+			dev, err := vpn.wgManager.GetDevice(name)
+			if err != nil {
+				log.Errorf("Failed to get device %s: %v", name, err)
+				continue
+			}
+			output.PrintMsg(fmt.Sprintf("Connected to: %s", name), output.MsgSuccess)
+			if dev != nil && len(dev.Peers) > 0 {
+				for _, peer := range dev.Peers {
+					if peer.Endpoint != "" {
+						output.PrintMsg(fmt.Sprintf("  Endpoint: %s", peer.Endpoint), output.MsgOutput)
+					}
+					if !peer.LastHandshakeTime.IsZero() {
+						output.PrintMsg(fmt.Sprintf("  Last handshake: %s", peer.LastHandshakeTime.Format("2006-01-02 15:04:05")), output.MsgOutput)
+					}
+					output.PrintMsg(fmt.Sprintf("  Transfer: ↓ %s / ↑ %s", formatBytes(peer.ReceiveBytes), formatBytes(peer.TransmitBytes)), output.MsgOutput)
+				}
+			}
 		}
 	}
 
@@ -330,12 +437,24 @@ func (vpn *DefaultVpn) Status() error {
 		return errors.NewNetworkError("get network details", err)
 	}
 
-	output.PrintMsg(fmt.Sprintf("IP Address: %s", network.Ip), output.MsgOutput)
-	output.PrintMsg(fmt.Sprintf("VPN enabled: %t", network.VpnEnabled), output.MsgOutput)
-	output.PrintMsg(fmt.Sprintf("Country: %s", network.Geo.Country), output.MsgOutput)
-	output.PrintMsg(fmt.Sprintf("City: %s", network.Geo.City), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("	Country: %s", network.Geo.Country), output.MsgOutput)
+	output.PrintMsg(fmt.Sprintf("	City: %s", network.Geo.City), output.MsgOutput)
 
 	return nil
+}
+
+// formatBytes formats bytes into a human-readable string
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
@@ -354,66 +473,4 @@ func generateKeys() (wgtypes.Key, wgtypes.Key, wgtypes.Key, error) {
 	}
 
 	return publicKey, preSharedKey, privateKey, nil
-}
-
-func (vpn *DefaultVpn) writeConfig(cfgName string, server remote.Server, privateKey string, ipv4 string, ipv6 string) (string, error) {
-	content := fmt.Sprintf(`[Interface]
-PrivateKey = %s
-Address = %s, %s
-
-[Peer]
-PublicKey = %s
-Endpoint = %s:51820
-AllowedIPs = 0.0.0.0/0, ::/0`,
-		privateKey,
-		ipv4,
-		ipv6,
-		server.PublicKey,
-		server.IPv4AddrIn,
-	)
-
-	fullPath, err := vpn.saveWgConfig(cfgName, content)
-	if err != nil {
-		return "", fmt.Errorf("failed to save config file: %w", err)
-	}
-
-	return fullPath, nil
-}
-
-func getConnectedServers() ([]string, error) {
-	output, err := console.WgShow()
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute 'wg show': %w", err)
-	}
-
-	lines := strings.Split(string(output), "\n")
-	n := strings.Count(string(output), "interface:")
-	s := make([]string, n)
-	i := 0
-	for _, l := range lines {
-		if strings.HasPrefix(l, "interface") {
-			s[i] = strings.TrimPrefix(l, "interface: ")
-			i++
-		}
-	}
-	return s, nil
-}
-
-func (vpn *DefaultVpn) saveWgConfig(serverName string, configContent string) (string, error) {
-	configDir, err := vpn.dirProvider.GetServersDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get servers directory: %w", err)
-	}
-
-	// Ensure directory exists
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create servers directory: %w", err)
-	}
-
-	// Sanitize the server name to avoid path traversal attacks
-	serverName = filepath.Base(serverName)
-
-	// Create the file with restricted permissions (600) as it contains private keys
-	filePath := filepath.Join(configDir, serverName+".conf")
-	return filePath, os.WriteFile(filePath, []byte(configContent), 0o600)
 }

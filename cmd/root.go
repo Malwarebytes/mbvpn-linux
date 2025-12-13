@@ -72,7 +72,11 @@ func init() {
 	holocron := remote.NewDefaultHolocron(machineIdProvider)
 	sm := session.NewDefaultSessionManager(cp, holocron)
 	ss := servers.NewDefaultServerStorage(dirProvider)
-	vpn := vpn.NewDefaultVpn(cp, holocron, ss, dirProvider)
+	vpn, err := vpn.NewDefaultVpn(cp, holocron, ss, dirProvider)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to initialize VPN manager: %v\n", err)
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(NewLoginCommand(sm))
 	rootCmd.AddCommand(NewLogoutCommand(sm))
