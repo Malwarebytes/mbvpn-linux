@@ -1,22 +1,17 @@
-name: Create Release
+name: Build and Attach Release Binaries
 permissions:
   contents: write
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version to release (format: vX.Y.Z)"
+      release_tag:
+        description: "Release tag to attach binaries to (format: vX.Y.Z)"
         required: true
         type: string
-      is_production:
-        description: "Production release"
-        required: true
-        default: true
-        type: boolean
 
 jobs:
-  validate-release:
+  validate-and-test:
     runs-on: ubuntu-latest
     outputs:
       major: ${{ steps.extract-version.outputs.major }}
@@ -26,10 +21,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify draft release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="${{ github.event.inputs.release_tag }}"
+
+          # Check if release exists
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "::error::Release with tag $RELEASE_TAG does not exist"
+            exit 1
+          fi
+
+          # Check if it's a draft
+          IS_DRAFT=$(gh release view "$RELEASE_TAG" --json isDraft -q .isDraft)
+          if [ "$IS_DRAFT" != "true" ]; then
+            echo "::error::Release $RELEASE_TAG is not a draft release"
+            exit 1
+          fi
+
+          echo "✓ Draft release $RELEASE_TAG found"
+
       - name: Validate version format and extract components
         id: extract-version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ github.event.inputs.release_tag }}"
 
           # Validate format (must be vX.Y.Z)
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -107,7 +123,7 @@ jobs:
           BINARY_OUTPUT=$(./mbvpn version)
 
           # Expected output is single line: v0.0.9
-          EXPECTED_VERSION="${{ github.event.inputs.version }}"
+          EXPECTED_VERSION="${{ github.event.inputs.release_tag }}"
 
           # Trim any whitespace
           BINARY_OUTPUT=$(echo "$BINARY_OUTPUT" | tr -d '[:space:]')
@@ -125,83 +141,9 @@ jobs:
 
           echo "✓ Binary version validation passed"
 
-      - name: Validation summary
-        run: |
-          echo "======================================"
-          echo "Release Validation Summary"
-          echo "======================================"
-          echo "✓ Version format validated"
-          echo "✓ Source code version matches input"
-          echo "✓ Unit tests passed"
-          echo "✓ Build successful"
-          echo "✓ Binary version output validated"
-          echo ""
-          echo "Version: ${{ github.event.inputs.version }}"
-          echo "Ready to create release"
-          echo "======================================"
-
-  create-release:
-    needs: validate-release
-    runs-on: ubuntu-latest
-    outputs:
-      MAJOR: ${{ needs.validate-release.outputs.major }}
-      MINOR: ${{ needs.validate-release.outputs.minor }}
-      PATCH: ${{ needs.validate-release.outputs.patch }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate Release Notes
-        id: release-notes
-        run: |
-          VERSION="${{ github.event.inputs.version }}"
-
-          # Get the previous tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          # Start building release notes
-          cat > release_notes.md << 'EOF'
-          ## What's Changed
-
-          EOF
-
-          # If we have a previous tag, generate changelog
-          if [ -n "$PREVIOUS_TAG" ]; then
-            # Add commit range link
-            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${VERSION}" >> release_notes.md
-            echo "" >> release_notes.md
-
-            # Get commits since last tag
-            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"* %s by @%an in %H" --no-merges > commits.txt
-
-            # Extract issue references and create proper links
-            while IFS= read -r line; do
-              # Replace commit hash with link
-              line=$(echo "$line" | sed -E "s/ in ([0-9a-f]{40})/ in [\1](https:\/\/github.com\/${{ github.repository }}\/commit\/\1)/")
-              # Replace issue references with links
-              line=$(echo "$line" | sed -E "s/#([0-9]+)/[#\1](https:\/\/github.com\/${{ github.repository }}\/issues\/\1)/g")
-              echo "$line" >> release_notes.md
-            done < commits.txt
-          else
-            echo "Initial release of MBVPN $VERSION" >> release_notes.md
-          fi
-
-          echo "" >> release_notes.md
-          echo '```' >> release_notes.md
-
-      - name: Create GitHub Release (Draft)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create ${{ github.event.inputs.version }} \
-            --title "MBVPN ${{ github.event.inputs.version }}" \
-            --notes-file release_notes.md \
-            --draft
-
   build-binaries:
-    needs: create-release
+    needs: validate-and-test
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.is_production == 'true' && 'prod' || 'stage' }}
     strategy:
       matrix:
         arch: [amd64, arm64, 386]
@@ -222,9 +164,9 @@ jobs:
 
       - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
         env:
-          VERSION_MAJOR: ${{ needs.create-release.outputs.MAJOR }}
-          VERSION_MINOR: ${{ needs.create-release.outputs.MINOR }}
-          VERSION_PATCH: ${{ needs.create-release.outputs.PATCH }}
+          VERSION_MAJOR: ${{ needs.validate-and-test.outputs.major }}
+          VERSION_MINOR: ${{ needs.validate-and-test.outputs.minor }}
+          VERSION_PATCH: ${{ needs.validate-and-test.outputs.patch }}
           VERSION_BUILD: ${{ github.run_number }}
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} task build-release
@@ -234,4 +176,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.inputs.version }} ${{ env.BINARY_NAME }}
+          gh release upload ${{ github.event.inputs.release_tag }} ${{ env.BINARY_NAME }}
