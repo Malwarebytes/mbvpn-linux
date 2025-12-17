@@ -437,6 +437,7 @@ func (vpn *DefaultVpn) Status() error {
 		return errors.NewNetworkError("get network details", err)
 	}
 
+	output.PrintMsg(fmt.Sprintf("	IP Address: %s", network.Ip), output.MsgOutput)
 	output.PrintMsg(fmt.Sprintf("	Country: %s", network.Geo.Country), output.MsgOutput)
 	output.PrintMsg(fmt.Sprintf("	City: %s", network.Geo.City), output.MsgOutput)
 
