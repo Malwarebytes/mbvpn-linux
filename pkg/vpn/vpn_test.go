@@ -2,7 +2,6 @@ package vpn
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/malwarebytes/mbvpn-linux/pkg/config"
@@ -346,51 +345,6 @@ func TestGenerateKeys_ErrorPaths(t *testing.T) {
 
 	if preSharedKey.String() == privateKey.String() {
 		t.Error("Pre-shared key and private key should be different")
-	}
-}
-
-// Test parsing logic for connected servers output (similar to wg show output)
-func TestParseWgShowOutput(t *testing.T) {
-	testOutput := `interface: wg0
-  public key: test-public-key-1
-  private key: (hidden)
-  listening port: 51820
-
-peer: peer-public-key-1
-  endpoint: 203.0.113.1:51820
-  allowed ips: 0.0.0.0/0, ::/0
-
-interface: wg1
-  public key: test-public-key-2
-  private key: (hidden)
-  listening port: 51821
-
-peer: peer-public-key-2
-  endpoint: 203.0.113.2:51820
-  allowed ips: 0.0.0.0/0, ::/0`
-
-	// Extract interface names from output
-	lines := strings.Split(testOutput, "\n")
-	interfaceCount := strings.Count(testOutput, "interface:")
-	interfaces := make([]string, interfaceCount)
-	i := 0
-	for _, line := range lines {
-		if strings.HasPrefix(line, "interface") {
-			interfaceName := strings.TrimPrefix(line, "interface: ")
-			interfaces[i] = interfaceName
-			i++
-		}
-	}
-
-	expectedInterfaces := []string{"wg0", "wg1"}
-	if len(interfaces) != len(expectedInterfaces) {
-		t.Errorf("Expected %d interfaces, got %d", len(expectedInterfaces), len(interfaces))
-	}
-
-	for i, expected := range expectedInterfaces {
-		if i < len(interfaces) && interfaces[i] != expected {
-			t.Errorf("Expected interface %s, got %s", expected, interfaces[i])
-		}
 	}
 }
 

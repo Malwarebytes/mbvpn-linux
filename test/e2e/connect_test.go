@@ -91,7 +91,7 @@ func TestConnectCommandWithValidCountryCode(t *testing.T) {
 		}
 		
 		// Expected errors include server data missing, network issues, or sudo requirements
-		validErrors := []string{"servers.json", "no servers found", "sudo", "wg-quick", "permission"}
+		validErrors := []string{"servers.json", "no servers found", "sudo", "permission"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -125,7 +125,7 @@ func TestConnectCommandWithCountryName(t *testing.T) {
 		}
 		
 		// Expected errors include server data missing, network issues, or sudo requirements
-		validErrors := []string{"servers.json", "no servers found", "sudo", "wg-quick", "permission"}
+		validErrors := []string{"servers.json", "no servers found", "sudo", "permission"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -159,7 +159,7 @@ func TestConnectCommandWithCityCode(t *testing.T) {
 		}
 		
 		// Expected errors include server data missing, network issues, or sudo requirements
-		validErrors := []string{"servers.json", "no servers found", "sudo", "wg-quick", "permission"}
+		validErrors := []string{"servers.json", "no servers found", "sudo", "permission"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {

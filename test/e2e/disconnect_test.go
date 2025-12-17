@@ -23,8 +23,8 @@ func TestDisconnectCommandBasic(t *testing.T) {
 			t.Errorf("Disconnect command crashed unexpectedly: %s", output)
 		}
 		
-		// Expected errors include sudo requirements, wg command issues, or no active connections
-		validErrors := []string{"sudo", "wg-quick", "permission", "no active", "not found"}
+		// Expected errors include sudo requirements or no active connections
+		validErrors := []string{"sudo", "permission", "no active", "not found"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -59,8 +59,8 @@ func TestDisconnectCommandWithServer(t *testing.T) {
 			t.Errorf("Disconnect command crashed unexpectedly: %s", output)
 		}
 		
-		// Expected errors include sudo requirements, wg command issues, or server not found
-		validErrors := []string{"sudo", "wg-quick", "permission", "not found", "no active"}
+		// Expected errors include sudo requirements or server not found
+		validErrors := []string{"sudo", "permission", "not found", "no active"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -179,8 +179,8 @@ func TestDisconnectCommandWithInvalidServer(t *testing.T) {
 			t.Errorf("Disconnect command crashed unexpectedly with invalid server: %s", output)
 		}
 		
-		// Expected errors include server not found, sudo requirements, or wg command issues
-		validErrors := []string{"not found", "sudo", "wg-quick", "permission", "no active"}
+		// Expected errors include server not found or sudo requirements
+		validErrors := []string{"not found", "sudo", "permission", "no active"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -210,8 +210,8 @@ func TestDisconnectCommandNoActiveConnection(t *testing.T) {
 			t.Errorf("Disconnect command crashed unexpectedly: %s", output)
 		}
 		
-		// Expected errors include no active connections, sudo requirements, or wg command issues
-		validErrors := []string{"no active", "not found", "sudo", "wg-quick", "permission"}
+		// Expected errors include no active connections or sudo requirements
+		validErrors := []string{"no active", "not found", "sudo", "permission"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {
@@ -241,8 +241,8 @@ func TestDisconnectCommandWithExtraArguments(t *testing.T) {
 			t.Errorf("Disconnect command crashed unexpectedly with extra args: %s", output)
 		}
 		
-		// Expected errors include server not found, sudo requirements, or wg command issues
-		validErrors := []string{"not found", "sudo", "wg-quick", "permission", "no active"}
+		// Expected errors include server not found or sudo requirements
+		validErrors := []string{"not found", "sudo", "permission", "no active"}
 		hasValidError := false
 		for _, validErr := range validErrors {
 			if strings.Contains(strings.ToLower(output), validErr) {

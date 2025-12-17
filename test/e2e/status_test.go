@@ -44,8 +44,8 @@ func TestStatusCommandNotConnected(t *testing.T) {
 	
 	// Status command may fail due to sudo requirements for wg commands
 	if err != nil {
-		// If it fails, it should be due to sudo/wg requirements, not session issues
-		if !strings.Contains(output, "sudo") && !strings.Contains(output, "wg show") {
+		// If it fails, it should be due to sudo requirements, not session issues
+		if !strings.Contains(output, "sudo") {
 			t.Errorf("Status command failed for unexpected reason: %v, output: %s", err, output)
 		}
 		return
@@ -70,8 +70,8 @@ func TestStatusCommandWithDebugFlag(t *testing.T) {
 	
 	// Status command may fail due to sudo requirements
 	if err != nil {
-		// If it fails, it should be due to sudo/wg requirements
-		if !strings.Contains(output, "sudo") && !strings.Contains(output, "wg show") {
+		// If it fails, it should be due to sudo requirements
+		if !strings.Contains(output, "sudo") {
 			t.Errorf("Status command with debug flag failed for unexpected reason: %v", err)
 		}
 	}
@@ -152,11 +152,10 @@ func TestStatusCommandInvalidArguments(t *testing.T) {
 	// Command should handle extra arguments gracefully
 	// Most CLI tools ignore extra arguments for status commands
 	if err != nil {
-		// If it fails, it should be due to sudo/wg requirements or session issues
-		if !strings.Contains(output, "not logged in") && 
+		// If it fails, it should be due to sudo requirements or session issues
+		if !strings.Contains(output, "not logged in") &&
 		   !strings.Contains(output, "No active session") &&
-		   !strings.Contains(output, "sudo") && 
-		   !strings.Contains(output, "wg show") {
+		   !strings.Contains(output, "sudo") {
 			t.Errorf("Status command failed for unexpected reason with invalid args: %v, output: %s", err, output)
 		}
 	}
@@ -175,8 +174,8 @@ func TestStatusCommandOutputStructure(t *testing.T) {
 	
 	// Status command may fail due to sudo requirements
 	if err != nil {
-		// If it fails, it should be due to sudo/wg requirements
-		if !strings.Contains(output, "sudo") && !strings.Contains(output, "wg show") {
+		// If it fails, it should be due to sudo requirements
+		if !strings.Contains(output, "sudo") {
 			t.Errorf("Status command failed for unexpected reason: %v", err)
 		}
 	}
