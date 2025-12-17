@@ -13,8 +13,8 @@ var (
 
 	// Version information
 	VersionMajor = "0"
-	VersionMinor = "0"
-	VersionPatch = "11"
+	VersionMinor = "1"
+	VersionPatch = "0"
 )
 
 func Debug() bool {

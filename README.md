@@ -16,14 +16,6 @@ The client is in experimental mode, so it is important to know which parts of th
 
 ## Installation
 
-### Prerequisites
-
-WireGuard tools are required for MBVPN to function properly. Install them using your distribution's package manager. For example:
-
-- **Ubuntu/Debian**: `sudo apt install wireguard wireguard-tools`
-- **Fedora**: `sudo dnf install wireguard-tools`
-- **Arch Linux**: `sudo pacman -S wireguard-tools`
-
 ### Installation via Go Package Manager (Recommended)
 
 Install MBVPN directly using Go's package manager:
@@ -32,22 +24,30 @@ Install MBVPN directly using Go's package manager:
 go install github.com/malwarebytes/mbvpn-linux/cmd/mbvpn@latest
 ```
 
+> Note: Ensure that your `$GOPATH/bin` is included in your system's `$PATH` to run the `mbvpn` command directly.
+
 ### Alternative: Download from Releases
 
 1. Download the latest release for your architecture from the [Releases](https://github.com/Malwarebytes/mbvpn-linux/releases) page
 2. Extract the binary and place it in a directory in your `$PATH` (e.g., `/usr/local/bin`)
 
+### Provide network capabilities
+
+To allow mbvpn to create WireGuard interfaces without running as root, grant it the necessary capabilities:
+
+```bash
+sudo setcap cap_net_admin,cap_net_raw+eip $(which mbvpn)
+```
+
+> Note: You may need to reapply these capabilities after updating the binary.
+
 ## Usage
 
 > You can access help information using `mbvpn --help` or `mbvpn <command> --help` if you want to read details about specific commands.
 
-First, authenticate yourself using the `login` command with license key or MB-code:
+First, authenticate yourself using the `login` command with MB-code:
 
 `mbvpn login --code MB-XXXXXX`
-
-or
-
-`mbvpn login --key XXXX-XXXX-XXXX-XXXX`
 
 ### Managing Servers
 
@@ -60,15 +60,15 @@ View available servers and locations:
 ### Connection Management
 
 Connect to a server:
-`sudo mbvpn connect <server>` (or the shorthand `sudo mbvpn c <server>`)
+`mbvpn connect <server>` 
 
 Disconnect from VPN:
-`sudo mbvpn disconnect` (or the shorthand `sudo mbvpn d`)
+`mbvpn disconnect` 
 
 Check connection status:
-`sudo mbvpn status`
+`mbvpn status`
 
-End your session:
+End your session and free up the license seat:
 `mbvpn logout`
 
 ## Troubleshooting
@@ -81,13 +81,7 @@ The `mbvpn logout` command deactivates your device (makes the license seat free)
 
 ### Cannot disconnect, lost internet access
 
-Use `sudo mbvpn disconnect` (without specifying a server). The tool will attempt to disconnect from all WireGuard connections.
-
-If that doesn't help, manually disconnect using WireGuard directly:
-1. Find your connection: `wg show`
-2. Disconnect: `sudo wg-quick down <interface_name>`
-
-> After connecting/disconnecting, give the tool a few seconds to establish or terminate the connection.
+Use `mbvpn disconnect` (without specifying a server). The tool will attempt to disconnect from all WireGuard connections.
 
 ---
 
