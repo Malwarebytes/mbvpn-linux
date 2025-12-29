@@ -12,13 +12,15 @@ The client is in experimental mode, so it is important to know which parts of th
   - Session info: `~/.config/mbvpn/config.yml`
   - Machine ID: `~/.config/mbvpn/machine-id`
   - WireGuard configurations: `~/.config/mbvpn/servers/*.conf`
-- `logout` command removes the configuration files but keeps WireGuard interfaces in the system
+- `logout` command removes the configuration files
 
 ## Installation
 
 ### Installation via Go Package Manager (Recommended)
 
-Install MBVPN directly using Go's package manager:
+1. Install Go version 1.23.4 or above.
+
+2. Install MBVPN directly using Go's package manager:
 
 ```bash
 go install github.com/malwarebytes/mbvpn-linux/cmd/mbvpn@latest
@@ -26,10 +28,13 @@ go install github.com/malwarebytes/mbvpn-linux/cmd/mbvpn@latest
 
 > Note: Ensure that your `$GOPATH/bin` is included in your system's `$PATH` to run the `mbvpn` command directly.
 
+3. Provide network capabilities (see below).
+
 ### Alternative: Download from Releases
 
 1. Download the latest release for your architecture from the [Releases](https://github.com/Malwarebytes/mbvpn-linux/releases) page
 2. Extract the binary and place it in a directory in your `$PATH` (e.g., `/usr/local/bin`)
+3. Provide network capabilities (see below).
 
 ### Provide network capabilities
 
