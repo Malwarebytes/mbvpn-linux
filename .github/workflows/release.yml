@@ -24,9 +24,8 @@ jobs:
       - name: Verify draft release exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
-          RELEASE_TAG="${{ github.event.inputs.release_tag }}"
-
           # Check if release exists
           if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
             echo "::error::Release with tag $RELEASE_TAG does not exist"
@@ -44,9 +43,9 @@ jobs:
 
       - name: Validate version format and extract components
         id: extract-version
+        env:
+          VERSION: ${{ github.event.inputs.release_tag }}
         run: |
-          VERSION="${{ github.event.inputs.release_tag }}"
-
           # Validate format (must be vX.Y.Z)
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Invalid version format. Must be vX.Y.Z (e.g., v0.1.0)"
