@@ -1,6 +1,6 @@
 name: Build and Attach Release Binaries
 permissions:
-  contents: write
+  contents: read
 
 on:
   workflow_dispatch:
@@ -21,12 +21,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate version format and extract components
+        id: extract-version
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          # Validate format (must be vX.Y.Z)
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format. Must be vX.Y.Z (e.g., v0.1.0)"
+            exit 1
+          fi
+
+          # Extract components
+          VERSION_NUM="${RELEASE_TAG#v}"
+          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
+
+          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
+          echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
+
       - name: Verify draft release exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
-          RELEASE_TAG="${{ github.event.inputs.release_tag }}"
-
           # Check if release exists
           if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
             echo "::error::Release with tag $RELEASE_TAG does not exist"
@@ -42,26 +60,11 @@ jobs:
 
           echo "✓ Draft release $RELEASE_TAG found"
 
-      - name: Validate version format and extract components
-        id: extract-version
-        run: |
-          VERSION="${{ github.event.inputs.release_tag }}"
-
-          # Validate format (must be vX.Y.Z)
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid version format. Must be vX.Y.Z (e.g., v0.1.0)"
-            exit 1
-          fi
-
-          # Extract components
-          VERSION_NUM="${VERSION#v}"
-          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
-
-          echo "major=$MAJOR" >> $GITHUB_OUTPUT
-          echo "minor=$MINOR" >> $GITHUB_OUTPUT
-          echo "patch=$PATCH" >> $GITHUB_OUTPUT
-
       - name: Extract and validate source code version
+        env:
+          INPUT_MAJOR: ${{ steps.extract-version.outputs.major }}
+          INPUT_MINOR: ${{ steps.extract-version.outputs.minor }}
+          INPUT_PATCH: ${{ steps.extract-version.outputs.patch }}
         run: |
           # Parse version from pkg/config/env.go
           MAJOR=$(grep -E '^\s*VersionMajor\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
@@ -74,7 +77,7 @@ jobs:
           fi
 
           SOURCE_VERSION="$MAJOR.$MINOR.$PATCH"
-          INPUT_VERSION="${{ steps.extract-version.outputs.major }}.${{ steps.extract-version.outputs.minor }}.${{ steps.extract-version.outputs.patch }}"
+          INPUT_VERSION="$INPUT_MAJOR.$INPUT_MINOR.$INPUT_PATCH"
 
           echo "Workflow input version: $INPUT_VERSION"
           echo "Source code version: $SOURCE_VERSION"
@@ -116,14 +119,13 @@ jobs:
           echo "✓ Build successful"
 
       - name: Validate binary version output
+        env:
+          EXPECTED_VERSION: ${{ github.event.inputs.release_tag }}
         run: |
           echo "Testing binary version output..."
 
           # Execute version command and capture output
           BINARY_OUTPUT=$(./mbvpn version)
-
-          # Expected output is single line: v0.0.9
-          EXPECTED_VERSION="${{ github.event.inputs.release_tag }}"
 
           # Trim any whitespace
           BINARY_OUTPUT=$(echo "$BINARY_OUTPUT" | tr -d '[:space:]')
@@ -144,6 +146,8 @@ jobs:
   build-binaries:
     needs: validate-and-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         arch: [amd64, arm64, 386]
@@ -168,12 +172,15 @@ jobs:
           VERSION_MINOR: ${{ needs.validate-and-test.outputs.minor }}
           VERSION_PATCH: ${{ needs.validate-and-test.outputs.patch }}
           VERSION_BUILD: ${{ github.run_number }}
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} task build-release
-          mv mbvpn ${{ env.BINARY_NAME }}
+          task build-release
+          mv mbvpn "$BINARY_NAME"
 
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
-          gh release upload ${{ github.event.inputs.release_tag }} ${{ env.BINARY_NAME }}
+          gh release upload "$RELEASE_TAG" "$BINARY_NAME"
