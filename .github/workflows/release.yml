@@ -19,7 +19,7 @@ jobs:
       patch: ${{ steps.extract-version.outputs.patch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Validate version format and extract components
         id: extract-version
@@ -156,7 +156,7 @@ jobs:
       BINARY_NAME: mbvpn-${{ matrix.os }}-${{ matrix.arch }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
