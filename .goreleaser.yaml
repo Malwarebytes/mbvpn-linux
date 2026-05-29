@@ -1,0 +1,53 @@
+version: 2
+
+builds:
+  - main: ./cmd/mbvpn
+    binary: mbvpn
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/malwarebytes/mbvpn-linux/pkg/config.Version={{.Version}}
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^style:"
+      - "^ci:"
+      - "^test:"
+
+brews:
+  - name: mbvpn
+    repository:
+      owner: malwarebytes
+      name: homebrew-tap
+      token: "{{ .Env.MWB_HOMEBREW_TAP }}"
+    homepage: "https://github.com/malwarebytes/mbvpn-linux"
+    description: "Malwarebytes VPN client for Linux"
+    license: "Apache-2.0"
+    install: |
+      bin.install "mbvpn"
+    test: |
+      system "#{bin}/mbvpn", "version"

@@ -32,16 +32,17 @@ func TestNewVersionCommand(t *testing.T) {
 }
 
 func TestVersionCommandOutput(t *testing.T) {
-	// Capture stdout
+	origVersion := config.Version
+	config.Version = "1.2.3"
+	defer func() { config.Version = origVersion }()
+
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	// Run the command
 	cmd := NewVersionCommand()
 	cmd.Run(cmd, []string{})
 
-	// Restore stdout and get output
 	w.Close()
 	os.Stdout = oldStdout
 
@@ -49,23 +50,19 @@ func TestVersionCommandOutput(t *testing.T) {
 	io.Copy(&buf, r)
 	output := strings.TrimSpace(buf.String())
 
-	// Verify output is single line
 	if strings.Contains(output, "\n") {
 		t.Errorf("Expected single line output, got multiple lines: %s", output)
 	}
 
-	// Verify output starts with "v"
 	if !strings.HasPrefix(output, "v") {
 		t.Errorf("Expected output to start with 'v', got: %s", output)
 	}
 
-	// Verify version format matches "vX.Y.Z"
-	expectedVersion := "v" + config.Version()
+	expectedVersion := "v" + config.Version
 	if output != expectedVersion {
 		t.Errorf("Expected version '%s', got '%s'", expectedVersion, output)
 	}
 
-	// Verify it contains dots (semantic version format)
 	if !strings.Contains(output, ".") {
 		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
 	}

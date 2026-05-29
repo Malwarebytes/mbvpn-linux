@@ -1,186 +1,32 @@
-name: Build and Attach Release Binaries
-permissions:
-  contents: read
+name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      release_tag:
-        description: "Release tag to attach binaries to (format: vX.Y.Z)"
-        required: true
-        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
-  validate-and-test:
+  release:
     runs-on: ubuntu-latest
-    outputs:
-      major: ${{ steps.extract-version.outputs.major }}
-      minor: ${{ steps.extract-version.outputs.minor }}
-      patch: ${{ steps.extract-version.outputs.patch }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Validate version format and extract components
-        id: extract-version
-        env:
-          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-        run: |
-          # Validate format (must be vX.Y.Z)
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid version format. Must be vX.Y.Z (e.g., v0.1.0)"
-            exit 1
-          fi
-
-          # Extract components
-          VERSION_NUM="${RELEASE_TAG#v}"
-          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
-
-          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
-          echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
-          echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
-
-      - name: Verify draft release exists
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-        run: |
-          # Check if release exists
-          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
-            echo "::error::Release with tag $RELEASE_TAG does not exist"
-            exit 1
-          fi
-
-          # Check if it's a draft
-          IS_DRAFT=$(gh release view "$RELEASE_TAG" --json isDraft -q .isDraft)
-          if [ "$IS_DRAFT" != "true" ]; then
-            echo "::error::Release $RELEASE_TAG is not a draft release"
-            exit 1
-          fi
-
-          echo "✓ Draft release $RELEASE_TAG found"
-
-      - name: Extract and validate source code version
-        env:
-          INPUT_MAJOR: ${{ steps.extract-version.outputs.major }}
-          INPUT_MINOR: ${{ steps.extract-version.outputs.minor }}
-          INPUT_PATCH: ${{ steps.extract-version.outputs.patch }}
-        run: |
-          # Parse version from pkg/config/env.go
-          MAJOR=$(grep -E '^\s*VersionMajor\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
-          MINOR=$(grep -E '^\s*VersionMinor\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
-          PATCH=$(grep -E '^\s*VersionPatch\s*=\s*"[0-9]+"' pkg/config/env.go | sed -E 's/.*"([0-9]+)".*/\1/')
-
-          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
-            echo "::error::Failed to extract version from pkg/config/env.go"
-            exit 1
-          fi
-
-          SOURCE_VERSION="$MAJOR.$MINOR.$PATCH"
-          INPUT_VERSION="$INPUT_MAJOR.$INPUT_MINOR.$INPUT_PATCH"
-
-          echo "Workflow input version: $INPUT_VERSION"
-          echo "Source code version: $SOURCE_VERSION"
-
-          if [ "$INPUT_VERSION" != "$SOURCE_VERSION" ]; then
-            echo "::error::Version mismatch!"
-            echo "::error::Workflow input: v$INPUT_VERSION"
-            echo "::error::Source code (pkg/config/env.go): $SOURCE_VERSION"
-            echo "::error::Please update VersionMajor, VersionMinor, VersionPatch in pkg/config/env.go before releasing."
-            exit 1
-          fi
-
-          echo "✓ Version validation passed: $SOURCE_VERSION"
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: "1.24"
 
-      - name: Install Task
-        uses: go-task/setup-task@v1
-
-      - name: Run unit tests
-        run: |
-          echo "Running unit tests..."
-          task test-unit
-          echo "✓ Unit tests passed"
-
-      - name: Build release binary
-        run: |
-          echo "Building release binary..."
-          task build-release
-
-          if [ ! -f mbvpn ]; then
-            echo "::error::Build failed - mbvpn binary not found"
-            exit 1
-          fi
-
-          echo "✓ Build successful"
-
-      - name: Validate binary version output
-        env:
-          EXPECTED_VERSION: ${{ github.event.inputs.release_tag }}
-        run: |
-          echo "Testing binary version output..."
-
-          # Execute version command and capture output
-          BINARY_OUTPUT=$(./mbvpn version)
-
-          # Trim any whitespace
-          BINARY_OUTPUT=$(echo "$BINARY_OUTPUT" | tr -d '[:space:]')
-          EXPECTED_VERSION=$(echo "$EXPECTED_VERSION" | tr -d '[:space:]')
-
-          echo "Binary output: $BINARY_OUTPUT"
-          echo "Expected version: $EXPECTED_VERSION"
-
-          if [ "$BINARY_OUTPUT" != "$EXPECTED_VERSION" ]; then
-            echo "::error::Binary version mismatch!"
-            echo "::error::Expected: $EXPECTED_VERSION"
-            echo "::error::Got: $BINARY_OUTPUT"
-            exit 1
-          fi
-
-          echo "✓ Binary version validation passed"
-
-  build-binaries:
-    needs: validate-and-test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    strategy:
-      matrix:
-        arch: [amd64, arm64, 386]
-        os: [linux]
-    env:
-      BINARY_NAME: mbvpn-${{ matrix.os }}-${{ matrix.arch }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          go-version: "1.24"
-
-      - name: Install Task
-        uses: go-task/setup-task@v1
-
-      - name: Build for ${{ matrix.os }}-${{ matrix.arch }}
-        env:
-          VERSION_MAJOR: ${{ needs.validate-and-test.outputs.major }}
-          VERSION_MINOR: ${{ needs.validate-and-test.outputs.minor }}
-          VERSION_PATCH: ${{ needs.validate-and-test.outputs.patch }}
-          VERSION_BUILD: ${{ github.run_number }}
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-        run: |
-          task build-release
-          mv mbvpn "$BINARY_NAME"
-
-      - name: Upload Release Asset
+          version: "~> v2"
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-        run: |
-          gh release upload "$RELEASE_TAG" "$BINARY_NAME"
+          MWB_HOMEBREW_TAP: ${{ secrets.MWB_HOMEBREW_TAP }}
