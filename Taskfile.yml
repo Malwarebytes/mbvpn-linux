@@ -59,6 +59,11 @@ tasks:
     env:
       MBVPN_TEST_LICENSE_KEY: "{{.MBVPN_TEST_LICENSE_KEY}}"
 
+  release-snapshot:
+    desc: Build a local snapshot release with goreleaser (no publish)
+    cmds:
+      - goreleaser release --snapshot --clean
+
   clean:
     desc: Clean build artifacts
     cmds:

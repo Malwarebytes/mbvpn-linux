@@ -14,7 +14,7 @@ func NewVersionCommand() *cobra.Command {
 		Short: "Display version information",
 		Long:  `Display the application version.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("v%s\n", config.Version())
+			fmt.Printf("v%s\n", config.Version)
 		},
 	}
 }

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -11,10 +10,8 @@ var (
 	BuildEnv    = "production"
 	HolocronUrl = "https://holocron.mwbsys.com/graphql"
 
-	// Version information
-	VersionMajor = "0"
-	VersionMinor = "1"
-	VersionPatch = "0"
+	// Version is injected at build time via -ldflags by GoReleaser.
+	Version = "dev"
 )
 
 func Debug() bool {
@@ -23,11 +20,6 @@ func Debug() bool {
 
 func Verbose() bool {
 	return testing.Testing() && testing.Verbose()
-}
-
-// Version returns the full version string in the format "major.minor.patch"
-func Version() string {
-	return fmt.Sprintf("%s.%s.%s", VersionMajor, VersionMinor, VersionPatch)
 }
 
 // GetHolocronUrl returns the Holocron URL, checking environment variable first

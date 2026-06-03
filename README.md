@@ -16,7 +16,17 @@ The client is in experimental mode, so it is important to know which parts of th
 
 ## Installation
 
-### Installation via Go Package Manager (Recommended)
+### Homebrew (Linux)
+
+```bash
+brew install malwarebytes/tap/mbvpn
+```
+
+Then provide network capabilities (see below).
+
+### Installation via Go Package Manager
+
+
 
 1. Install Go version 1.23.4 or above.
 
