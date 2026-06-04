@@ -22,32 +22,6 @@ The client is in experimental mode, so it is important to know which parts of th
 brew install malwarebytes/tap/mbvpn
 ```
 
-Then provide network capabilities (see below).
-
-### Installation via Go Package Manager
-
-
-
-1. Install Go version 1.23.4 or above.
-
-2. Install MBVPN directly using Go's package manager:
-
-```bash
-go install github.com/malwarebytes/mbvpn-linux/cmd/mbvpn@latest
-```
-
-> Note: Ensure that your `$GOPATH/bin` is included in your system's `$PATH` to run the `mbvpn` command directly.
-
-3. Provide network capabilities (see below).
-
-### Alternative: Download from Releases
-
-1. Download the latest release for your architecture from the [Releases](https://github.com/Malwarebytes/mbvpn-linux/releases) page
-2. Extract the binary and place it in a directory in your `$PATH` (e.g., `/usr/local/bin`)
-3. Provide network capabilities (see below).
-
-### Provide network capabilities
-
 To allow mbvpn to create WireGuard interfaces without running as root, grant it the necessary capabilities:
 
 ```bash
