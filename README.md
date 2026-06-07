@@ -25,7 +25,7 @@ brew install malwarebytes/tap/mbvpn
 To allow mbvpn to create WireGuard interfaces without running as root, grant it the necessary capabilities:
 
 ```bash
-sudo setcap cap_net_admin,cap_net_raw+eip $(which mbvpn)
+sudo setcap cap_net_admin,cap_net_raw+eip $(readlink -f $(which mbvpn))
 ```
 
 > Note: You may need to reapply these capabilities after updating the binary.
