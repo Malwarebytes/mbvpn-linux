@@ -31,8 +31,8 @@ tasks:
       - >-
         go build {{.GOFLAGS}}
         {{.RELEASE_BUILDFLAGS}}
-         -o {{.BINARY_NAME}}
-         ./cmd/mbvpn
+        -o {{.BINARY_NAME}}
+        ./cmd/mbvpn
       - >-
         go build {{.GOFLAGS}}
         {{.RELEASE_BUILDFLAGS}}
@@ -74,5 +74,5 @@ tasks:
     desc: Clean build artifacts
     cmds:
       - go clean
-       - rm -f {{.BINARY_NAME}}
-       - rm -f {{.DAEMON_BINARY_NAME}}
+      - rm -f {{.BINARY_NAME}}
+      - rm -f {{.DAEMON_BINARY_NAME}}
