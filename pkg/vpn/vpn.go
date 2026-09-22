@@ -272,20 +272,9 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		return errors.NewNetworkError("register public key", err)
 	}
 
-	// Create WireGuard interface
+	// Never replace a pre-existing interface. It may belong to another user or service.
 	if err := vpn.wgManager.CreateInterface(ifaceName); err != nil {
-		// If interface already exists, try to remove it first
-		if strings.Contains(err.Error(), "already exists") {
-			log.Infof("Interface %s already exists, removing and recreating", ifaceName)
-			if rmErr := vpn.wgManager.RemoveInterface(ifaceName); rmErr != nil {
-				return errors.NewVPNError("remove existing interface", rmErr)
-			}
-			if err := vpn.wgManager.CreateInterface(ifaceName); err != nil {
-				return errors.NewVPNError("create interface", err)
-			}
-		} else {
-			return errors.NewVPNError("create interface", err)
-		}
+		return errors.NewVPNError("create interface", err)
 	}
 
 	// Determine port from server's port ranges, fallback to 51820
