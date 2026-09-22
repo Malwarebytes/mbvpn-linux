@@ -38,6 +38,9 @@ archives:
       {{- .Version }}_
       {{- .Os }}_
       {{- .Arch }}
+    files:
+      - src: packaging/systemd/mbvpnd.service
+        dst: .
 
 checksum:
   name_template: "checksums.txt"
@@ -63,6 +66,8 @@ brews:
     license: "Apache-2.0"
     install: |
       bin.install "mbvpn"
-      sbin.install "mbvpnd"
+      libexec.install "mbvpnd"
+      inreplace "mbvpnd.service", "/usr/libexec/mbvpn/mbvpnd", "#{libexec}/mbvpnd"
+      libexec.install "mbvpnd.service"
     test: |
       system "#{bin}/mbvpn", "version"
