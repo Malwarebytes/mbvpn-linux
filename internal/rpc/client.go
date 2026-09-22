@@ -40,7 +40,7 @@ func (c Client) Call(ctx context.Context, method string, params any, result any)
 		return fmt.Errorf("unexpected response")
 	}
 	if response.Error != nil {
-		return fmt.Errorf("%s: %s", response.Error.Code, response.Error.Message)
+		return response.Error
 	}
 	if result == nil || len(response.Result) == 0 {
 		return nil
