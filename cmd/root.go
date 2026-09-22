@@ -6,10 +6,6 @@ import (
 
 	"github.com/malwarebytes/mbvpn-linux/pkg/config"
 	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
-	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
-	"github.com/malwarebytes/mbvpn-linux/pkg/servers"
-	"github.com/malwarebytes/mbvpn-linux/pkg/session"
-	"github.com/malwarebytes/mbvpn-linux/pkg/vpn"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -56,33 +52,16 @@ func Execute() {
 }
 
 func init() {
-	// Create directory provider (single source of truth for all directory paths)
-	dirProvider, err := config.NewDefaultDirectoryProvider()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to initialize configuration directory: %v\n", err)
-		os.Exit(1)
-	}
+	client := newDaemonClient()
 
-	// Wire up all dependencies with directory provider
-	cp := config.NewYamlConfigProvider(dirProvider)
-	machineIdProvider := config.NewConfigFileMachineIdProvider(dirProvider)
-	holocron := remote.NewDefaultHolocron(machineIdProvider)
-	sm := session.NewDefaultSessionManager(cp, holocron)
-	ss := servers.NewDefaultServerStorage(dirProvider)
-	vpn, err := vpn.NewDefaultVpn(cp, holocron, ss, dirProvider)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to initialize VPN manager: %v\n", err)
-		os.Exit(1)
-	}
-
-	rootCmd.AddCommand(NewLoginCommand(sm))
-	rootCmd.AddCommand(NewLogoutCommand(sm))
-	rootCmd.AddCommand(NewServersCommand(sm, vpn))
-	rootCmd.AddCommand(NewCountriesCommand(sm, vpn))
-	rootCmd.AddCommand(NewCitiesCommand(sm, vpn))
-	rootCmd.AddCommand(NewConnectCommand(sm, vpn))
-	rootCmd.AddCommand(NewDisconnectCommand(vpn))
-	rootCmd.AddCommand(NewStatusCommand(vpn))
+	rootCmd.AddCommand(NewLoginCommand(client))
+	rootCmd.AddCommand(NewLogoutCommand(client))
+	rootCmd.AddCommand(NewServersCommand(client, client))
+	rootCmd.AddCommand(NewCountriesCommand(client, client))
+	rootCmd.AddCommand(NewCitiesCommand(client, client))
+	rootCmd.AddCommand(NewConnectCommand(client, client))
+	rootCmd.AddCommand(NewDisconnectCommand(client))
+	rootCmd.AddCommand(NewStatusCommand(client))
 	rootCmd.AddCommand(NewVersionCommand())
 
 	rootCmd.PersistentFlags().Bool("debug", false, "Run command in debug mode.")
