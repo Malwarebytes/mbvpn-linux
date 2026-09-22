@@ -50,3 +50,17 @@ func TestReadRequestRejectsInvalidUtf8(t *testing.T) {
 		})
 	}
 }
+
+func TestReadRequestRejectsUnknownFields(t *testing.T) {
+	var buffer bytes.Buffer
+	payload := []byte(`{"version":1,"id":"one","method":"status","extra":true}`)
+	if err := binary.Write(&buffer, binary.BigEndian, uint32(len(payload))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := buffer.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadRequest(&buffer); err == nil {
+		t.Fatal("expected unknown field error")
+	}
+}
