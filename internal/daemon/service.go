@@ -150,17 +150,22 @@ func (s *Service) status(uid uint32) (any, *rpc.Error) {
 }
 
 func (s *Service) locations(uid uint32) (any, *rpc.Error) {
-	sessionService, vpnService, err := s.dependencies(uid)
-	if err != nil {
-		return nil, internalError(err)
-	}
+	directory := config.NewDirectoryProvider(s.Paths.UserConfigDir(uid))
+	configuration := config.NewYamlConfigProvider(directory)
+	machineID := config.NewConfigFileMachineIdProvider(directory)
+	holocron := remote.NewDefaultHolocron(machineID)
+	sessionService := session.NewDefaultSessionManager(configuration, holocron)
 	if !sessionService.Active() {
 		return nil, &rpc.Error{Code: "not_authenticated", Message: "there is no active session"}
 	}
-	if err := vpnService.Servers(true, true); err != nil {
+	locations, err := holocron.GetVpnLocations()
+	if err != nil {
 		return nil, userError(err)
 	}
-	return map[string]any{"state": "updated"}, nil
+	if err := servers.NewDefaultServerStorage(directory).Save(locations); err != nil {
+		return nil, userError(err)
+	}
+	return map[string]any{"locations": locations}, nil
 }
 
 func internalError(err error) *rpc.Error {
