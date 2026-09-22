@@ -56,6 +56,10 @@ func (m *mockVpn) Status() error {
 	return nil
 }
 
+func (m *mockVpn) Close() error {
+	return nil
+}
+
 func TestNewCitiesCommand(t *testing.T) {
 	sm := &mockSessionManager{}
 	vpn := &mockVpn{}

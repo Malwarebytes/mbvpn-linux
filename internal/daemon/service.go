@@ -77,12 +77,15 @@ func (s *Service) dependencies(uid uint32) (session.SessionManager, vpn.Vpn, err
 	return session.NewDefaultSessionManager(configuration, holocron), vpnService, nil
 }
 
+func (s *Service) sessionService(uid uint32) session.SessionManager {
+	directory := config.NewDirectoryProvider(s.Paths.UserConfigDir(uid))
+	configuration := config.NewYamlConfigProvider(directory)
+	machineID := config.NewConfigFileMachineIdProvider(directory)
+	return session.NewDefaultSessionManager(configuration, remote.NewDefaultHolocron(machineID))
+}
+
 func (s *Service) login(uid uint32, code string) (any, *rpc.Error) {
-	sessionService, _, err := s.dependencies(uid)
-	if err != nil {
-		return nil, internalError(err)
-	}
-	if err := sessionService.LoginWithCode(code); err != nil {
+	if err := s.sessionService(uid).LoginWithCode(code); err != nil {
 		return nil, userError(err)
 	}
 	return map[string]any{"state": "active"}, nil
@@ -95,6 +98,7 @@ func (s *Service) logout(uid uint32) (any, *rpc.Error) {
 	if err != nil {
 		return nil, internalError(err)
 	}
+	defer vpnService.Close()
 	if err := vpnService.Disconnect(""); err != nil {
 		return nil, userError(err)
 	}
@@ -114,6 +118,7 @@ func (s *Service) connect(uid uint32, selector string) (any, *rpc.Error) {
 	if err != nil {
 		return nil, internalError(err)
 	}
+	defer vpnService.Close()
 	if !sessionService.Active() {
 		return nil, &rpc.Error{Code: "not_authenticated", Message: "there is no active session"}
 	}
@@ -130,6 +135,7 @@ func (s *Service) disconnect(uid uint32, server string, allOwned bool) (any, *rp
 	if err != nil {
 		return nil, internalError(err)
 	}
+	defer vpnService.Close()
 	if !allOwned && server == "" {
 		return nil, &rpc.Error{Code: "invalid_request", Message: "connection target is required"}
 	}

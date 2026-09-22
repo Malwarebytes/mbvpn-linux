@@ -87,6 +87,8 @@ func (c daemonClient) Status() error {
 	return nil
 }
 
+func (daemonClient) Close() error { return nil }
+
 func (c daemonClient) call(method string, params any, result any) error {
 	return c.client.Call(context.Background(), method, params, result)
 }
