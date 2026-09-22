@@ -107,6 +107,12 @@ func Listen(socket string, group string) (net.Listener, error) {
 	if err := os.MkdirAll("/run/mbvpn", 0o750); err != nil {
 		return nil, err
 	}
+	if err := os.Chown("/run/mbvpn", 0, groupID); err != nil {
+		return nil, err
+	}
+	if err := os.Chmod("/run/mbvpn", 0o750); err != nil {
+		return nil, err
+	}
 	if err := os.Remove(socket); err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}

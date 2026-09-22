@@ -22,7 +22,7 @@ type Service struct {
 	mu         sync.Mutex
 }
 
-func (s Service) Handle(_ context.Context, caller rpc.Caller, request rpc.Request) (any, *rpc.Error) {
+func (s *Service) Handle(_ context.Context, caller rpc.Caller, request rpc.Request) (any, *rpc.Error) {
 	if err := s.Authorizer.Authorize(caller); err != nil {
 		return nil, &rpc.Error{Code: "not_authorized", Message: "caller is not authorized"}
 	}
@@ -65,7 +65,7 @@ func (s Service) Handle(_ context.Context, caller rpc.Caller, request rpc.Reques
 	}
 }
 
-func (s Service) dependencies(uid uint32) (session.SessionManager, vpn.Vpn, error) {
+func (s *Service) dependencies(uid uint32) (session.SessionManager, vpn.Vpn, error) {
 	directory := config.NewDirectoryProvider(s.Paths.UserConfigDir(uid))
 	configuration := config.NewYamlConfigProvider(directory)
 	machineID := config.NewConfigFileMachineIdProvider(directory)
@@ -77,7 +77,7 @@ func (s Service) dependencies(uid uint32) (session.SessionManager, vpn.Vpn, erro
 	return session.NewDefaultSessionManager(configuration, holocron), vpnService, nil
 }
 
-func (s Service) login(uid uint32, code string) (any, *rpc.Error) {
+func (s *Service) login(uid uint32, code string) (any, *rpc.Error) {
 	sessionService, _, err := s.dependencies(uid)
 	if err != nil {
 		return nil, internalError(err)
@@ -88,10 +88,15 @@ func (s Service) login(uid uint32, code string) (any, *rpc.Error) {
 	return map[string]any{"state": "active"}, nil
 }
 
-func (s Service) logout(uid uint32) (any, *rpc.Error) {
-	sessionService, _, err := s.dependencies(uid)
+func (s *Service) logout(uid uint32) (any, *rpc.Error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sessionService, vpnService, err := s.dependencies(uid)
 	if err != nil {
 		return nil, internalError(err)
+	}
+	if err := vpnService.Disconnect(""); err != nil {
+		return nil, userError(err)
 	}
 	if err := sessionService.Logout(); err != nil {
 		return nil, userError(err)
@@ -134,7 +139,7 @@ func (s *Service) disconnect(uid uint32, server string, allOwned bool) (any, *rp
 	return map[string]any{"state": "disconnected"}, nil
 }
 
-func (s Service) status(uid uint32) (any, *rpc.Error) {
+func (s *Service) status(uid uint32) (any, *rpc.Error) {
 	directory := config.NewDirectoryProvider(s.Paths.UserConfigDir(uid))
 	store := connections.NewStore(directory)
 	connections, err := store.List()
@@ -144,7 +149,7 @@ func (s Service) status(uid uint32) (any, *rpc.Error) {
 	return map[string]any{"connections": connections}, nil
 }
 
-func (s Service) locations(uid uint32) (any, *rpc.Error) {
+func (s *Service) locations(uid uint32) (any, *rpc.Error) {
 	sessionService, vpnService, err := s.dependencies(uid)
 	if err != nil {
 		return nil, internalError(err)
