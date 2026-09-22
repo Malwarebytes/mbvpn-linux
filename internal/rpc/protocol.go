@@ -25,6 +25,10 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
 type Response struct {
 	Version int             `json:"version"`
 	ID      string          `json:"id"`
