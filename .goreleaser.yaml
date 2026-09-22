@@ -15,6 +15,20 @@ builds:
       - -trimpath
     ldflags:
       - -s -w -X github.com/malwarebytes/mbvpn-linux/pkg/config.Version={{.Version}}
+  - main: ./cmd/mbvpnd
+    binary: mbvpnd
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/malwarebytes/mbvpn-linux/pkg/config.Version={{.Version}}
 
 archives:
   - formats:
@@ -49,5 +63,6 @@ brews:
     license: "Apache-2.0"
     install: |
       bin.install "mbvpn"
+      sbin.install "mbvpnd"
     test: |
       system "#{bin}/mbvpn", "version"

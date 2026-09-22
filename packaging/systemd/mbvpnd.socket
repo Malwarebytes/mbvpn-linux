@@ -1,0 +1,13 @@
+[Unit]
+Description=Malwarebytes VPN daemon socket
+
+[Socket]
+ListenStream=/run/mbvpn/mbvpnd.sock
+SocketUser=root
+SocketGroup=mbvpn
+SocketMode=0660
+DirectoryMode=0750
+RemoveOnStop=true
+
+[Install]
+WantedBy=sockets.target
