@@ -21,6 +21,11 @@ type Vpn interface {
 	Connect(cfg string) error
 	Disconnect(cfg string) error
 	Status() error
+	Close() error
+}
+
+func (vpn *DefaultVpn) Close() error {
+	return vpn.wgManager.Close()
 }
 
 type DefaultVpn struct {
