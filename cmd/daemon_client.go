@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/malwarebytes/mbvpn-linux/internal/rpc"
 	"github.com/malwarebytes/mbvpn-linux/pkg/output"
+	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
 
 type daemonClient struct{ client rpc.Client }
@@ -26,7 +28,38 @@ func (c daemonClient) LoginWithCode(code string) error {
 func (c daemonClient) Logout() error { return c.call("logout", nil, nil) }
 func (c daemonClient) Active() bool  { return true }
 
-func (c daemonClient) Servers(bool, bool) error { return c.call("locations", nil, nil) }
+func (c daemonClient) Servers(showCities bool, showServers bool) error {
+	var result struct {
+		Locations remote.VpnLocations `json:"locations"`
+	}
+	if err := c.call("locations", nil, &result); err != nil {
+		return err
+	}
+	for _, country := range result.Locations.Countries {
+		output.PrintMsg(fmt.Sprintf("%s, %s", country.Name, country.Code), output.MsgOutput)
+		if !showCities {
+			continue
+		}
+		for cityIndex, city := range country.Cities {
+			cityPrefix := "└─"
+			if cityIndex < len(country.Cities)-1 {
+				cityPrefix = "├─"
+			}
+			output.PrintMsg(fmt.Sprintf("  %s %s, %s", cityPrefix, city.Name, city.Code), output.MsgOutput)
+			if !showServers {
+				continue
+			}
+			for serverIndex, server := range city.Servers {
+				serverPrefix := "└─"
+				if serverIndex < len(city.Servers)-1 {
+					serverPrefix = "├─"
+				}
+				output.PrintMsg(fmt.Sprintf("     %s %s", serverPrefix, strings.Split(server.Hostname, ".")[0]), output.MsgOutput)
+			}
+		}
+	}
+	return nil
+}
 func (c daemonClient) Connect(selector string) error {
 	return c.call("connect", map[string]string{"selector": selector}, nil)
 }
