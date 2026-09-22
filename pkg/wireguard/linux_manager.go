@@ -64,6 +64,9 @@ func (m *LinuxManager) RemoveInterface(name string) error {
 		}
 		return fmt.Errorf("failed to find interface %s: %w", name, err)
 	}
+	if link.Type() != "wireguard" {
+		return fmt.Errorf("refusing to remove non-WireGuard interface %s", name)
+	}
 	return netlink.LinkDel(link)
 }
 
