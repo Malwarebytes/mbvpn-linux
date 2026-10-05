@@ -16,20 +16,20 @@ func NewConnectCommand(sm session.SessionManager, vpn vpn.Vpn) *cobra.Command {
 Requires an active session (login first) and a valid server identifier.
 
 Server Specification Options:
-  You can specify the server in multiple ways:
+  You can specify the server in multiple ways (case-insensitive):
 
-  1. Exact server name:     us-newyork-1
-  2. City code:             NYC (randomly selects from New York servers)
-  3. City name:             "New York" (randomly selects from New York servers)
-  4. Country code:          US (randomly selects from US servers)
-  5. Country name:          "United States" (randomly selects from US servers)
+  1. Exact server name:     gb-lon-2
+  2. City code:             gb-lon (randomly selects from London servers)
+  3. City name:             "London" (randomly selects from London servers)
+  4. Country code:          gb (randomly selects from UK servers)
+  5. Country name:          "United Kingdom" (randomly selects from UK servers)
 
 Examples:
-  mbvpn connect us-newyork-1     # Connect to specific New York server #1
-  mbvpn connect NYC              # Connect to random New York server
-  mbvpn connect "New York"       # Connect to random New York server
-  mbvpn connect US               # Connect to random US server
-  mbvpn connect "United States"  # Connect to random US server
+  mbvpn connect gb-lon-2         # Connect to specific London server #2
+  mbvpn connect gb-lon           # Connect to random London server
+  mbvpn connect London           # Connect to random London server
+  mbvpn connect gb               # Connect to random UK server
+  mbvpn connect "United Kingdom" # Connect to random UK server
 
 Use 'mbvpn servers' to see all available servers with their exact names.
 Use 'mbvpn countries' or 'mbvpn cities' to browse servers by location.`,
