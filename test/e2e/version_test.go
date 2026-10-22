@@ -20,16 +20,7 @@ func TestVersionCommand(t *testing.T) {
 		t.Errorf("Version command failed with error: %v", err)
 	}
 
-	// Check that output starts with "v" and contains version number
-	output = strings.TrimSpace(output)
-	if !strings.HasPrefix(output, "v") {
-		t.Errorf("Expected output to start with 'v', got: %s", output)
-	}
-
-	// Check that it contains dots (semantic version format)
-	if !strings.Contains(output, ".") {
-		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
-	}
+	assertVersionOutput(t, output)
 }
 
 func TestVersionCommandFormat(t *testing.T) {
@@ -51,17 +42,7 @@ func TestVersionCommandFormat(t *testing.T) {
 		t.Errorf("Expected single line output, got multiple lines: %s", output)
 	}
 
-	// Should start with "v"
-	if !strings.HasPrefix(output, "v") {
-		t.Errorf("Expected version to start with 'v', got: %s", output)
-	}
-
-	// Should be in format "vX.Y.Z"
-	versionValue := strings.TrimPrefix(output, "v")
-	parts := strings.Split(versionValue, ".")
-	if len(parts) != 3 {
-		t.Errorf("Expected version format 'vX.Y.Z', got: %s", output)
-	}
+	assertVersionOutput(t, output)
 }
 
 func TestVersionCommandWithDebugFlag(t *testing.T) {
@@ -78,11 +59,8 @@ func TestVersionCommandWithDebugFlag(t *testing.T) {
 
 	output = strings.TrimSpace(output)
 
-	// When debug flag is used, there may be debug messages before version
-	// Check if output contains version format vX.Y.Z
-	if !strings.Contains(output, "v0.0.") {
-		t.Errorf("Expected version format 'vX.Y.Z' in output, got: %s", output)
-	}
+	// Validate the version separately from the debug banner.
+	assertVersionOutput(t, strings.TrimPrefix(output, "=== Running in debug mode ===\n"))
 
 	// Should show debug mode indicator when --debug is used
 	if !strings.Contains(output, "=== Running in debug mode ===") {
