@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -16,6 +17,24 @@ import (
 const (
 	invalidMbCode = "MB-12345"
 )
+
+// Accept development builds and SemVer releases, including prerelease/build metadata.
+var versionPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$`)
+
+func validVersion(version string) bool {
+	return version == "vdev" || versionPattern.MatchString(version)
+}
+
+func assertVersionOutput(t *testing.T, output string) {
+	t.Helper()
+	if !validVersion(strings.TrimSpace(output)) {
+		t.Errorf("Expected vdev or a semantic version, got: %s", output)
+	}
+}
+
+func testConfigDir(homeDir string) string {
+	return filepath.Join(homeDir, ".config", "mbvpn")
+}
 
 // setupTestHome creates a temporary home directory for testing
 func setupTestHome(t *testing.T) string {
@@ -28,7 +47,7 @@ func setupTestHome(t *testing.T) string {
 	}
 
 	// Create the necessary subdirectories
-	configDir := filepath.Join(homeDir, "mbvpn")
+	configDir := testConfigDir(homeDir)
 	err = os.MkdirAll(configDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
@@ -59,7 +78,7 @@ func cleanupTestHome(t *testing.T, homeDir string) {
 func checkConfigFile(t *testing.T, homeDir string) bool {
 	t.Helper()
 
-	configPath := filepath.Join(homeDir, "mbvpn", "config.yml")
+	configPath := filepath.Join(testConfigDir(homeDir), "config.yml")
 
 	// Check if the file exists
 	_, err := os.Stat(configPath)
@@ -83,7 +102,7 @@ func checkConfigFile(t *testing.T, homeDir string) bool {
 func checkConfigDeleted(t *testing.T, homeDir string) bool {
 	t.Helper()
 
-	configPath := filepath.Join(homeDir, "mbvpn", "config.yml")
+	configPath := filepath.Join(testConfigDir(homeDir), "config.yml")
 
 	// Check if the file exists
 	_, err := os.Stat(configPath)
@@ -94,7 +113,7 @@ func checkConfigDeleted(t *testing.T, homeDir string) bool {
 func createMockSession(t *testing.T, homeDir string) {
 	t.Helper()
 
-	configDir := filepath.Join(homeDir, "mbvpn")
+	configDir := testConfigDir(homeDir)
 	configPath := filepath.Join(configDir, "config.yml")
 	mockConfig := `installation_token: mock-installation-token
 private_key: ""
@@ -122,6 +141,7 @@ func execCommand(t *testing.T, args []string, homeDir string) (string, error) {
 	// Set environment variables for the command
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
+		"XDG_CONFIG_HOME="+filepath.Join(homeDir, ".config"),
 		"MBVPN_HOLOCRON_URL=https://idms-holocron-stage.mwbsys.com/graphql", // Use staging environment
 		"MBVPN_ENV=testing",
 	)
