@@ -20,13 +20,15 @@ func TestStatusCommandNotLoggedIn(t *testing.T) {
 		t.Errorf("Status command failed unexpectedly: %v", err)
 	}
 
-	// Should show network status information
-	if strings.TrimSpace(output) == "" {
-		t.Errorf("Status command should show network status, got empty output")
+	// Network status should be available without a session.
+	for _, field := range []string{"IP Address:", "Country:", "City:"} {
+		if !strings.Contains(output, field) {
+			t.Errorf("Expected network status field %q, got: %s", field, output)
+		}
 	}
 
-	// A fresh test home should have no active connections.
-	if !strings.Contains(output, "No active connections.") {
+	// HOME isolates configuration, not the host's WireGuard interfaces.
+	if !strings.Contains(output, "No active connections.") && !strings.Contains(output, "Connected to:") {
 		t.Errorf("Expected VPN status information, got: %s", output)
 	}
 }

@@ -125,6 +125,27 @@ public_key: ""
 	}
 }
 
+// createMockServers creates an opt-in cache for tests that exercise server lookup.
+func createMockServers(t *testing.T, homeDir string) {
+	t.Helper()
+
+	servers := `{
+  "countries": [{
+    "code": "ZZ",
+    "name": "Test Country",
+    "defaultCity": "TST",
+    "cities": [{
+      "code": "TST",
+      "name": "Test City",
+      "servers": [{"hostname": "mbvpn-e2e.test", "ipv4AddrIn": "192.0.2.1"}]
+    }]
+  }]
+}`
+	if err := os.WriteFile(filepath.Join(testConfigDir(homeDir), "servers.json"), []byte(servers), 0600); err != nil {
+		t.Fatalf("Failed to create mock server cache: %v", err)
+	}
+}
+
 // execCommand is a helper function to execute any mbvpn command and capture its output
 func execCommand(t *testing.T, args []string, homeDir string) (string, error) {
 	t.Helper()
