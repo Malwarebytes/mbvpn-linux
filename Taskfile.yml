@@ -2,6 +2,7 @@ version: "3"
 
 vars:
   BINARY_NAME: mbvpn
+  DAEMON_BINARY_NAME: mbvpnd
 
   # Debug flags
   DEBUG_GCFLAGS: -N -l
@@ -30,8 +31,13 @@ tasks:
       - >-
         go build {{.GOFLAGS}}
         {{.RELEASE_BUILDFLAGS}}
-        -o {{.BINARY_NAME}}
-        ./cmd/mbvpn
+         -o {{.BINARY_NAME}}
+         ./cmd/mbvpn
+      - >-
+        go build {{.GOFLAGS}}
+        {{.RELEASE_BUILDFLAGS}}
+        -o {{.DAEMON_BINARY_NAME}}
+        ./cmd/mbvpnd
 
   test:
     desc: Run all tests
@@ -68,4 +74,5 @@ tasks:
     desc: Clean build artifacts
     cmds:
       - go clean
-      - rm -f {{.BINARY_NAME}}
+       - rm -f {{.BINARY_NAME}}
+       - rm -f {{.DAEMON_BINARY_NAME}}
