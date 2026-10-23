@@ -28,9 +28,8 @@ The `mbvpn` client is unprivileged. Install and authorize the daemon once:
 sudo groupadd --system mbvpn
 sudo usermod -aG mbvpn "$USER"
 sudo install -D -m 0644 packaging/systemd/mbvpnd.service /usr/lib/systemd/system/mbvpnd.service
-sudo install -D -m 0644 packaging/systemd/mbvpnd.socket /usr/lib/systemd/system/mbvpnd.socket
 sudo systemctl daemon-reload
-sudo systemctl enable --now mbvpnd.socket
+sudo systemctl enable --now mbvpnd.service
 ```
 
 Start a new login session after changing group membership. Do not grant file
