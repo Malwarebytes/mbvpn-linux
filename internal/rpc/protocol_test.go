@@ -31,6 +31,13 @@ func TestReadRequestRejectsOversizedFrame(t *testing.T) {
 	}
 }
 
+func TestErrorMessage(t *testing.T) {
+	err := (&Error{Code: "not_authenticated", Message: "there is no active session"}).Error()
+	if err != "not_authenticated: there is no active session" {
+		t.Fatalf("unexpected error message: %q", err)
+	}
+}
+
 func TestReadRequestRejectsUnknownFields(t *testing.T) {
 	var buffer bytes.Buffer
 	payload := []byte(`{"version":1,"id":"one","method":"status","extra":true}`)
