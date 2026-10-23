@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vishvananda/netlink"
 )
 
 func skipIfNotPrivileged(t *testing.T) {
@@ -89,6 +90,31 @@ func TestRemoveNonExistentInterface(t *testing.T) {
 	// Removing non-existent interface should not error
 	err = mgr.RemoveInterface("nonexistent123")
 	assert.NoError(t, err)
+}
+
+func TestRemoveNonWireGuardInterface(t *testing.T) {
+	skipIfNotPrivileged(t)
+
+	mgr, err := NewManager()
+	require.NoError(t, err)
+	defer mgr.Close()
+
+	const testInterface = "dummytest0"
+	dummy := &netlink.Dummy{
+		LinkAttrs: netlink.LinkAttrs{Name: testInterface},
+	}
+	require.NoError(t, netlink.LinkAdd(dummy))
+
+	t.Cleanup(func() {
+		assert.NoError(t, netlink.LinkDel(dummy))
+	})
+
+	err = mgr.RemoveInterface(testInterface)
+	require.EqualError(t, err, "refusing to remove non-WireGuard interface "+testInterface)
+
+	link, err := netlink.LinkByName(testInterface)
+	require.NoError(t, err)
+	assert.Equal(t, "dummy", link.Type())
 }
 
 func TestListDevices(t *testing.T) {
