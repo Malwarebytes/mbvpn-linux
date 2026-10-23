@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/user"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -93,7 +95,15 @@ func peerCredentials(conn net.Conn) (Caller, error) {
 	return Caller{UID: credentials.Uid, GID: credentials.Gid, PID: credentials.Pid}, nil
 }
 
-func Listen(socket string, groupID int) (net.Listener, error) {
+func Listen(socket string, group string) (net.Listener, error) {
+	authorizedGroup, err := user.LookupGroup(group)
+	if err != nil {
+		return nil, err
+	}
+	groupID, err := strconv.Atoi(authorizedGroup.Gid)
+	if err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll("/run/mbvpn", 0o750); err != nil {
 		return nil, err
 	}
