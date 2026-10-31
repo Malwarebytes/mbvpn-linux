@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/malwarebytes/mbvpn-linux/internal/rpc"
+	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
 	"github.com/malwarebytes/mbvpn-linux/pkg/output"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
 )
@@ -90,5 +92,25 @@ func (c daemonClient) Status() error {
 func (daemonClient) Close() error { return nil }
 
 func (c daemonClient) call(method string, params any, result any) error {
-	return c.client.Call(context.Background(), method, params, result)
+	err := c.client.Call(context.Background(), method, params, result)
+	var rpcErr *rpc.Error
+	if !stderrors.As(err, &rpcErr) {
+		return err
+	}
+	return c.mapError(rpcErr)
+}
+
+func (daemonClient) mapError(rpcErr *rpc.Error) error {
+	switch rpcErr.Code {
+	case "not_authenticated":
+		return errors.NewUserError(rpcErr.Message, errors.ErrUnauthorized)
+	case "not_authorized":
+		return errors.NewUserError(rpcErr.Message, errors.ErrPermissionDenied)
+	case "invalid_request":
+		return errors.NewUserError(rpcErr.Message, errors.ErrInvalidInput)
+	case "operation_failed":
+		return errors.NewUserError(rpcErr.Message, nil)
+	default:
+		return rpcErr
+	}
 }
