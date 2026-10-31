@@ -13,7 +13,7 @@ type MachineIdProvider interface {
 	Get() (string, error)
 }
 
-type ConfigFileMachineIdProvider struct{
+type ConfigFileMachineIdProvider struct {
 	dirProvider DirectoryProvider
 }
 

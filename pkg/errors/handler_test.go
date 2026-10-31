@@ -17,7 +17,7 @@ func captureOutput(fn func()) (stdout, stderr string) {
 	oldStdout := os.Stdout
 	rOut, wOut, _ := os.Pipe()
 	os.Stdout = wOut
-	
+
 	// Capture stderr
 	oldStderr := os.Stderr
 	rErr, wErr, _ := os.Pipe()
@@ -49,7 +49,7 @@ func TestNewHandler(t *testing.T) {
 
 func TestHandler_Handle_WithNilError(t *testing.T) {
 	handler := NewHandler()
-	
+
 	shouldExit := handler.Handle(nil)
 	if shouldExit {
 		t.Error("Handle should return false for nil error")
@@ -144,7 +144,7 @@ func TestHandler_HandleWithMessage(t *testing.T) {
 		})
 
 		if !strings.Contains(stderr, customMessage) {
-				t.Errorf("Should display custom message '%s', got: %s", customMessage, stderr)
+			t.Errorf("Should display custom message '%s', got: %s", customMessage, stderr)
 		}
 	})
 }
@@ -153,7 +153,7 @@ func TestHandler_Fatal(t *testing.T) {
 	// Note: We can't easily test os.Exit(1) in unit tests as it would terminate the test process
 	// In a real scenario, you might use dependency injection or test with build tags
 	// For now, we'll test that Fatal calls Handle
-	
+
 	handler := NewHandler()
 	userErr := NewUserError("test message", nil)
 
@@ -201,11 +201,11 @@ func TestUserErrorExtraction(t *testing.T) {
 	t.Run("Extract UserError from UserError", func(t *testing.T) {
 		userErr := NewUserError("test message", nil)
 		extracted := userError(userErr)
-		
+
 		if extracted == nil {
 			t.Fatal("Should extract UserError from UserError")
 		}
-		
+
 		if extracted.Message != "test message" {
 			t.Errorf("Expected 'test message', got '%s'", extracted.Message)
 		}
@@ -215,11 +215,11 @@ func TestUserErrorExtraction(t *testing.T) {
 		userErr := NewUserError("test message", nil)
 		wrappedErr := fmt.Errorf("wrapped: %w", userErr)
 		extracted := userError(wrappedErr)
-		
+
 		if extracted == nil {
 			t.Fatal("Should extract UserError from wrapped UserError")
 		}
-		
+
 		if extracted.Message != "test message" {
 			t.Errorf("Expected 'test message', got '%s'", extracted.Message)
 		}
@@ -228,7 +228,7 @@ func TestUserErrorExtraction(t *testing.T) {
 	t.Run("Return nil for non-UserError", func(t *testing.T) {
 		regularErr := errors.New("regular error")
 		extracted := userError(regularErr)
-		
+
 		if extracted != nil {
 			t.Error("Should return nil for non-UserError")
 		}
@@ -236,7 +236,7 @@ func TestUserErrorExtraction(t *testing.T) {
 
 	t.Run("Return nil for nil error", func(t *testing.T) {
 		extracted := userError(nil)
-		
+
 		if extracted != nil {
 			t.Error("Should return nil for nil error")
 		}
@@ -247,7 +247,7 @@ func TestHandlerDebugMode(t *testing.T) {
 	// Test debug mode behavior
 	// Note: This test depends on the config.Debug() function
 	// In a real scenario, you might want to inject debug mode as a parameter
-	
+
 	handler := &Handler{debug: true}
 	userErr := NewUserError("User message", errors.New("underlying error"))
 
@@ -309,14 +309,14 @@ func TestHandler_Integration(t *testing.T) {
 func TestPrintMsgIntegration(t *testing.T) {
 	// This test verifies that our handler properly integrates with the output package
 	handler := NewHandler()
-	
+
 	// Test with a user error that should use MsgError type
 	userErr := NewUserError("Test user error", nil)
-	
+
 	_, stderr := captureOutput(func() {
 		handler.Handle(userErr)
 	})
-	
+
 	// The output should contain the error message (exact formatting may vary)
 	if len(stderr) == 0 {
 		t.Error("Should display some output for user error")

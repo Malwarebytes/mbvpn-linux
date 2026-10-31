@@ -59,11 +59,11 @@ func TestConfigError(t *testing.T) {
 
 	t.Run("ConfigError struct creation", func(t *testing.T) {
 		configErr := &ConfigError{Op: "direct creation", Err: fmt.Errorf("test error")}
-		
+
 		if configErr.Op != "direct creation" {
 			t.Errorf("Expected operation 'direct creation', got '%s'", configErr.Op)
 		}
-		
+
 		if configErr.Err.Error() != "test error" {
 			t.Errorf("Expected error 'test error', got '%s'", configErr.Err.Error())
 		}

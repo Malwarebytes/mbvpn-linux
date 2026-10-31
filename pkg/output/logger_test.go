@@ -14,7 +14,7 @@ func captureOutput(fn func()) (stdout, stderr string) {
 	oldStdout := os.Stdout
 	rOut, wOut, _ := os.Pipe()
 	os.Stdout = wOut
-	
+
 	// Capture stderr
 	oldStderr := os.Stderr
 	rErr, wErr, _ := os.Pipe()
@@ -55,7 +55,7 @@ func TestMsgType_Constants(t *testing.T) {
 
 func TestPrintMsg_MsgOutput(t *testing.T) {
 	message := "Test output message"
-	
+
 	stdout, stderr := captureOutput(func() {
 		PrintMsg(message, MsgOutput)
 	})
@@ -63,11 +63,11 @@ func TestPrintMsg_MsgOutput(t *testing.T) {
 	if !strings.Contains(stdout, message) {
 		t.Errorf("Expected stdout to contain '%s', got: %s", message, stdout)
 	}
-	
+
 	if stderr != "" {
 		t.Errorf("Expected no stderr output, got: %s", stderr)
 	}
-	
+
 	// MsgOutput should not have any prefix
 	if strings.Contains(stdout, "✔") || strings.Contains(stdout, "✖") || strings.Contains(stdout, "⚠") {
 		t.Error("MsgOutput should not have any prefix symbols")
@@ -76,7 +76,7 @@ func TestPrintMsg_MsgOutput(t *testing.T) {
 
 func TestPrintMsg_MsgSuccess(t *testing.T) {
 	message := "Test success message"
-	
+
 	stdout, stderr := captureOutput(func() {
 		PrintMsg(message, MsgSuccess)
 	})
@@ -84,11 +84,11 @@ func TestPrintMsg_MsgSuccess(t *testing.T) {
 	if !strings.Contains(stdout, message) {
 		t.Errorf("Expected stdout to contain '%s', got: %s", message, stdout)
 	}
-	
+
 	if !strings.Contains(stdout, "✔") {
 		t.Error("Success message should contain check mark symbol")
 	}
-	
+
 	if stderr != "" {
 		t.Errorf("Expected no stderr output, got: %s", stderr)
 	}
@@ -96,7 +96,7 @@ func TestPrintMsg_MsgSuccess(t *testing.T) {
 
 func TestPrintMsg_MsgError(t *testing.T) {
 	message := "Test error message"
-	
+
 	stdout, stderr := captureOutput(func() {
 		PrintMsg(message, MsgError)
 	})
@@ -104,11 +104,11 @@ func TestPrintMsg_MsgError(t *testing.T) {
 	if !strings.Contains(stderr, message) {
 		t.Errorf("Expected stderr to contain '%s', got: %s", message, stderr)
 	}
-	
+
 	if !strings.Contains(stderr, "✖") {
 		t.Error("Error message should contain X mark symbol")
 	}
-	
+
 	if stdout != "" {
 		t.Errorf("Expected no stdout output, got: %s", stdout)
 	}
@@ -116,7 +116,7 @@ func TestPrintMsg_MsgError(t *testing.T) {
 
 func TestPrintMsg_MsgWarning(t *testing.T) {
 	message := "Test warning message"
-	
+
 	stdout, stderr := captureOutput(func() {
 		PrintMsg(message, MsgWarning)
 	})
@@ -124,11 +124,11 @@ func TestPrintMsg_MsgWarning(t *testing.T) {
 	if !strings.Contains(stdout, message) {
 		t.Errorf("Expected stdout to contain '%s', got: %s", message, stdout)
 	}
-	
+
 	if !strings.Contains(stdout, "⚠") {
 		t.Error("Warning message should contain warning symbol")
 	}
-	
+
 	if stderr != "" {
 		t.Errorf("Expected no stderr output, got: %s", stderr)
 	}
@@ -143,7 +143,7 @@ func TestPrintMsg_EmptyMessage(t *testing.T) {
 	if stdout == "" {
 		t.Error("Expected at least a newline character in stdout")
 	}
-	
+
 	if stderr != "" {
 		t.Errorf("Expected no stderr output, got: %s", stderr)
 	}
@@ -151,7 +151,7 @@ func TestPrintMsg_EmptyMessage(t *testing.T) {
 
 func TestPrintMsg_MultilineMessage(t *testing.T) {
 	message := "Line 1\nLine 2\nLine 3"
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintMsg(message, MsgOutput)
 	})
@@ -173,7 +173,7 @@ func TestPrintTable_BasicUsage(t *testing.T) {
 		{"Alice", "30", "New York"},
 		{"Bob", "25", "San Francisco"},
 	}
-	
+
 	stdout, stderr := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -213,7 +213,7 @@ func TestPrintTable_EmptyHeaders(t *testing.T) {
 	rows := [][]string{
 		{"Alice", "30"},
 	}
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -227,7 +227,7 @@ func TestPrintTable_EmptyHeaders(t *testing.T) {
 func TestPrintTable_EmptyRows(t *testing.T) {
 	headers := []string{"Name", "Age"}
 	rows := [][]string{}
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -248,7 +248,7 @@ func TestPrintTable_SingleColumn(t *testing.T) {
 		{"Bob"},
 		{"Charlie"},
 	}
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -270,10 +270,10 @@ func TestPrintTable_SingleColumn(t *testing.T) {
 func TestPrintTable_MismatchedColumns(t *testing.T) {
 	headers := []string{"Name", "Age", "City"}
 	rows := [][]string{
-		{"Alice", "30"}, // Missing city
+		{"Alice", "30"},                         // Missing city
 		{"Bob", "25", "San Francisco", "Extra"}, // Extra column
 	}
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -294,7 +294,7 @@ func TestPrintTable_SpecialCharacters(t *testing.T) {
 		{"✗", "Cross"},
 		{"⚠", "Warning"},
 	}
-	
+
 	stdout, _ := captureOutput(func() {
 		PrintTable(headers, rows)
 	})
@@ -312,7 +312,7 @@ func TestPrintTable_SpecialCharacters(t *testing.T) {
 
 func TestLogError(t *testing.T) {
 	testErr := errors.New("test error message")
-	
+
 	_, stderr := captureOutput(func() {
 		LogError(testErr)
 	})
@@ -320,7 +320,7 @@ func TestLogError(t *testing.T) {
 	if !strings.Contains(stderr, "test error message") {
 		t.Errorf("Expected stderr to contain error message, got: %s", stderr)
 	}
-	
+
 	if !strings.Contains(stderr, "Error:") {
 		t.Error("Expected stderr to contain 'Error:' prefix")
 	}
@@ -334,7 +334,7 @@ func TestLogError_NilError(t *testing.T) {
 	if !strings.Contains(stderr, "Error:") {
 		t.Error("Expected stderr to contain 'Error:' prefix even for nil")
 	}
-	
+
 	// Should handle nil gracefully (Go's error interface handles this)
 	if !strings.Contains(stderr, "<nil>") {
 		t.Error("Expected stderr to show '<nil>' for nil error")
@@ -343,7 +343,7 @@ func TestLogError_NilError(t *testing.T) {
 
 func TestLogError_ComplexError(t *testing.T) {
 	testErr := errors.New("complex error with\nnewlines and\ttabs")
-	
+
 	_, stderr := captureOutput(func() {
 		LogError(testErr)
 	})

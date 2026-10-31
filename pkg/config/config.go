@@ -10,8 +10,8 @@ import (
 
 type Config struct {
 	InstallationToken string `yaml:"installation_token"`
-	PrivateKey string `yaml:"private_key"`
-	PublicKey string `yaml:"public_key"`
+	PrivateKey        string `yaml:"private_key"`
+	PublicKey         string `yaml:"public_key"`
 }
 
 type ConfigProvider interface {
@@ -23,7 +23,7 @@ type ConfigProvider interface {
 	update(cfg Config) error
 }
 
-type YamlConfigProvider struct{
+type YamlConfigProvider struct {
 	dirProvider DirectoryProvider
 }
 
@@ -94,7 +94,7 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 	}
 
 	cfg.PrivateKey = privateKey
-	cfg.PublicKey = publicKey 
+	cfg.PublicKey = publicKey
 
 	err = cp.update(cfg)
 	if err != nil {
@@ -103,7 +103,6 @@ func (cp *YamlConfigProvider) StoreData(publicKey string, privateKey string) err
 
 	return nil
 }
-
 
 func (cp *YamlConfigProvider) Get() (Config, error) {
 	configPath, err := cp.dirProvider.GetConfigFile()
@@ -159,4 +158,3 @@ func (cp *YamlConfigProvider) Get() (Config, error) {
 
 	return cfg, nil
 }
-
