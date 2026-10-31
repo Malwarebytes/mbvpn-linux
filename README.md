@@ -8,27 +8,33 @@
 
 The client is in experimental mode, so it is important to know which parts of the Linux system are affected:
 
-- Configuration files in user's config directory:
-  - Session info: `~/.config/mbvpn/config.yml`
-  - Machine ID: `~/.config/mbvpn/machine-id`
-  - WireGuard configurations: `~/.config/mbvpn/servers/*.conf`
-- `logout` command removes the configuration files
+- The root-owned daemon stores per-user credentials, keys, and connection state
+  under `/var/lib/mbvpn`.
+- The daemon socket is `/run/mbvpn/mbvpnd.sock` and is accessible only to members
+  of the `mbvpn` Unix group.
+- `logout` removes the calling user's daemon-owned session state.
 
 ## Installation
 
-### Homebrew (Linux)
+### systemd Linux
 
 ```bash
 brew install malwarebytes/tap/mbvpn
 ```
 
-To allow mbvpn to create WireGuard interfaces without running as root, grant it the necessary capabilities:
+The `mbvpn` client is unprivileged. Install and authorize the daemon once:
 
 ```bash
-sudo setcap cap_net_admin,cap_net_raw+eip $(readlink -f $(which mbvpn))
+sudo groupadd --system mbvpn
+sudo usermod -aG mbvpn "$USER"
+sudo install -D -m 0644 packaging/systemd/mbvpnd.service /usr/lib/systemd/system/mbvpnd.service
+sudo install -D -m 0644 packaging/systemd/mbvpnd.socket /usr/lib/systemd/system/mbvpnd.socket
+sudo systemctl daemon-reload
+sudo systemctl enable --now mbvpnd.socket
 ```
 
-> Note: You may need to reapply these capabilities after updating the binary.
+Start a new login session after changing group membership. Do not grant file
+capabilities to `mbvpn`; the daemon holds the narrowly scoped network privilege.
 
 ## Usage
 
@@ -70,7 +76,9 @@ The `mbvpn logout` command deactivates your device (makes the license seat free)
 
 ### Cannot disconnect, lost internet access
 
-Use `mbvpn disconnect` (without specifying a server). The tool will attempt to disconnect from all WireGuard connections.
+Use `mbvpn disconnect` without specifying a server. It disconnects only the
+calling user's recorded mbvpn connection and never enumerates unrelated
+WireGuard interfaces.
 
 ---
 
