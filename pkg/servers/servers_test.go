@@ -410,6 +410,36 @@ func TestDefaultServerStorage_GetByServerName(t *testing.T) {
 		}
 	})
 
+	t.Run("Lookup is case-insensitive", func(t *testing.T) {
+		cases := map[string][]string{
+			"us":                   {"vpn01.us.example.com", "vpn02.us.example.com", "vpn01.lax.example.com"},
+			"nyc":                  {"vpn01.us.example.com", "vpn02.us.example.com"},
+			"new york":             {"vpn01.us.example.com", "vpn02.us.example.com"},
+			"united states":        {"vpn01.us.example.com", "vpn02.us.example.com", "vpn01.lax.example.com"},
+			"VPN01.US.EXAMPLE.COM": {"vpn01.us.example.com"},
+			"VPN01":                {"vpn01.us.example.com"},
+		}
+		for name, want := range cases {
+			server, err := storage.GetByServerName(name)
+			if err != nil {
+				t.Fatalf("GetByServerName(%q) should succeed: %v", name, err)
+			}
+			if server == nil {
+				t.Errorf("GetByServerName(%q) should find a server", name)
+				continue
+			}
+			found := false
+			for _, hostname := range want {
+				if server.Hostname == hostname {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("GetByServerName(%q) = %q, want one of %v", name, server.Hostname, want)
+			}
+		}
+	})
+
 	t.Run("Server not found", func(t *testing.T) {
 		server, err := storage.GetByServerName("nonexistent")
 		if err != nil {
@@ -594,5 +624,57 @@ func BenchmarkDefaultServerStorage_GetByServerName(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		storage.GetByServerName("vpn01.us.example.com")
+	}
+}
+
+func TestDefaultServerStorage_GetByServerName_SkipsEmptyLocations(t *testing.T) {
+	dirProvider, cleanup := setupTestDir(t)
+	defer cleanup()
+
+	storage := NewDefaultServerStorage(dirProvider)
+	locations := &remote.VpnLocations{
+		Countries: []remote.Country{
+			{Code: "xx", Name: "Empty Land"},
+			{
+				Code:   "zz",
+				Name:   "Ghost Land",
+				Cities: []remote.City{{Code: "zz-gho", Name: "Ghost City"}},
+			},
+			{
+				Code: "yy",
+				Name: "Half Land",
+				Cities: []remote.City{
+					{Code: "yy-emp", Name: "Empty City"},
+					{
+						Code:    "yy-ful",
+						Name:    "Full City",
+						Servers: []remote.Server{{Hostname: "yy-ful-1.example.com"}},
+					},
+				},
+			},
+		},
+	}
+	if err := storage.Save(locations); err != nil {
+		t.Fatalf("Failed to save test data: %v", err)
+	}
+
+	for _, name := range []string{"xx", "zz", "yy-emp"} {
+		server, err := storage.GetByServerName(name)
+		if err != nil {
+			t.Fatalf("GetByServerName(%q) should not error: %v", name, err)
+		}
+		if server != nil {
+			t.Errorf("GetByServerName(%q) should return nil for a location without servers", name)
+		}
+	}
+
+	for i := 0; i < 20; i++ {
+		server, err := storage.GetByServerName("yy")
+		if err != nil {
+			t.Fatalf("GetByServerName(\"yy\") should not error: %v", err)
+		}
+		if server == nil || server.Hostname != "yy-ful-1.example.com" {
+			t.Fatalf("GetByServerName(\"yy\") should pick the only city with servers, got %+v", server)
+		}
 	}
 }

@@ -78,26 +78,46 @@ func (s *DefaultServerStorage) GetByServerName(name string) (*remote.Server, err
 		return nil, fmt.Errorf("failed to get locations: %w", err)
 	}
 
+	if name == "" {
+		return nil, nil
+	}
+
 	for _, country := range locations.Countries {
 		for _, city := range country.Cities {
 			for _, server := range city.Servers {
 				shortHost := strings.Split(server.Hostname, ".")[0]
-				if server.Hostname == name || shortHost == name {
+				if strings.EqualFold(server.Hostname, name) || strings.EqualFold(shortHost, name) {
 					return &server, nil
 				}
 			}
-			if city.Code == name || city.Name == name {
+			if len(city.Servers) > 0 && (strings.EqualFold(city.Code, name) || strings.EqualFold(city.Name, name)) {
 				return &city.Servers[randomInt(len(city.Servers))], nil
 			}
 		}
-		if country.Code == name || country.Name == name {
-			randomCity := country.Cities[randomInt(len(country.Cities))]
-			randomServer := randomCity.Servers[randomInt(len(randomCity.Servers))]
-			return &randomServer, nil
+		if strings.EqualFold(country.Code, name) || strings.EqualFold(country.Name, name) {
+			if server := randomServerInCountry(country); server != nil {
+				return server, nil
+			}
 		}
 	}
 
 	return nil, nil
+}
+
+// randomServerInCountry picks a random server among the country's cities
+// that have at least one server. It returns nil when there is none.
+func randomServerInCountry(country remote.Country) *remote.Server {
+	var cities []remote.City
+	for _, city := range country.Cities {
+		if len(city.Servers) > 0 {
+			cities = append(cities, city)
+		}
+	}
+	if len(cities) == 0 {
+		return nil
+	}
+	city := cities[randomInt(len(cities))]
+	return &city.Servers[randomInt(len(city.Servers))]
 }
 
 func randomInt(max int) int {
