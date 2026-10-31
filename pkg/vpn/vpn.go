@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/malwarebytes/mbvpn-linux/pkg/config"
+	"github.com/malwarebytes/mbvpn-linux/pkg/connections"
 	"github.com/malwarebytes/mbvpn-linux/pkg/errors"
 	"github.com/malwarebytes/mbvpn-linux/pkg/output"
 	"github.com/malwarebytes/mbvpn-linux/pkg/remote"
@@ -28,6 +29,7 @@ type DefaultVpn struct {
 	serverStorage servers.ServerStorage
 	dirProvider   config.DirectoryProvider
 	wgManager     wireguard.Manager
+	connections   connections.Store
 }
 
 func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, serverStorage servers.ServerStorage, dirProvider config.DirectoryProvider) (Vpn, error) {
@@ -42,6 +44,7 @@ func NewDefaultVpn(cfgProvider config.ConfigProvider, holocron remote.Holocron, 
 		serverStorage: serverStorage,
 		dirProvider:   dirProvider,
 		wgManager:     mgr,
+		connections:   connections.NewStore(dirProvider),
 	}, nil
 }
 
@@ -326,6 +329,13 @@ func (vpn *DefaultVpn) Connect(cfg string) error {
 		vpn.wgManager.RemoveInterface(ifaceName)
 		return errors.NewVPNError("add routes", err)
 	}
+	if err := vpn.connections.Save(connections.Connection{
+		InterfaceName: ifaceName, ServerName: strings.Split(server.Hostname, ".")[0],
+		DevicePublicKey: keyData.PublicKey, PeerPublicKey: server.PublicKey,
+	}); err != nil {
+		_ = vpn.wgManager.RemoveInterface(ifaceName)
+		return errors.NewConfigError("save connection", err)
+	}
 
 	output.PrintMsg("Connected.", output.MsgSuccess)
 	return nil
@@ -356,49 +366,38 @@ func sanitizeInterfaceName(hostname string) string {
 }
 
 func (vpn *DefaultVpn) Disconnect(cfg string) error {
-	if cfg == "" {
-		devices, err := vpn.wgManager.ListDevices()
+	tracked, err := vpn.connections.List()
+	if err != nil {
+		return errors.NewConfigError("list connections", err)
+	}
+	for _, connection := range tracked {
+		if cfg != "" && cfg != connection.ServerName {
+			continue
+		}
+		device, err := vpn.wgManager.GetDevice(connection.InterfaceName)
 		if err != nil {
-			return errors.NewVPNError("list devices", err)
+			return errors.NewVPNError("inspect connection", err)
 		}
-
-		if len(devices) == 0 {
-			output.PrintMsg("No active connections.", output.MsgOutput)
-			return nil
+		if device == nil {
+			_ = vpn.connections.Delete(connection.InterfaceName)
+			continue
 		}
-
-		for _, name := range devices {
-			output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", name), output.MsgOutput)
-			if err := vpn.wgManager.RemoveInterface(name); err != nil {
-				log.Errorf("Failed to disconnect from %s: %v", name, err)
-			} else {
-				output.PrintMsg(fmt.Sprintf("Disconnected from %s.", name), output.MsgSuccess)
+		peerMatches := false
+		for _, peer := range device.Peers {
+			if peer.PublicKey == connection.PeerPublicKey {
+				peerMatches = true
 			}
 		}
-		return nil
+		if device.PublicKey != connection.DevicePublicKey || !peerMatches {
+			return errors.NewUserError("refusing to disconnect an unverified interface", errors.ErrUnauthorized)
+		}
+		if err := vpn.wgManager.RemoveInterface(connection.InterfaceName); err != nil {
+			return errors.NewVPNError("disconnect", err)
+		}
+		if err := vpn.connections.Delete(connection.InterfaceName); err != nil {
+			return errors.NewConfigError("delete connection", err)
+		}
 	}
-
-	// If a specific server name is provided, find and disconnect it
-	server, err := vpn.serverStorage.GetByServerName(cfg)
-	if err != nil {
-		return errors.NewConfigError("get server by name", err)
-	}
-
-	var ifaceName string
-	if server != nil {
-		ifaceName = sanitizeInterfaceName(server.Hostname)
-	} else {
-		// Maybe they provided the interface name directly
-		ifaceName = sanitizeInterfaceName(cfg)
-	}
-
-	output.PrintMsg(fmt.Sprintf("Disconnecting from %s...", ifaceName), output.MsgOutput)
-
-	if err := vpn.wgManager.RemoveInterface(ifaceName); err != nil {
-		return errors.NewVPNError("disconnect", err)
-	}
-
-	output.PrintMsg("Disconnected.", output.MsgSuccess)
 	return nil
 }
 
